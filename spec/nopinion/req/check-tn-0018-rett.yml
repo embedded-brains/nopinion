@@ -1,0 +1,406 @@
+SPDX-License-Identifier: CC-BY-SA-4.0 OR BSD-2-Clause
+copyrights:
+- Copyright (C) 2026 embedded brains GmbH & Co. KG
+enabled-by: true
+functional-type: action
+links:
+- role: requirement-refinement
+  uid: tn-0018
+post-conditions:
+- name: Finding
+  states:
+  - name: None
+    test-code: |
+      T_eq_int(
+        TxCountAt( ctx->report, ctx->offset, "rett-without-workaround" ),
+        0
+      );
+    text: |
+      The errata checker shall report no ${../glossary/finding:/term} of a JMPL,
+      RETT pair without the workaround.
+  - name: Definite
+    test-code: |
+      T_eq_int(
+        TxCountAt( ctx->report, ctx->offset, "rett-without-workaround" ),
+        1
+      );
+      T_false(
+        TxIsPossibleAt( ctx->report, ctx->offset, "rett-without-workaround" )
+      );
+    text: |
+      The errata checker shall report one ${../glossary/definite-finding:/term} of
+      a JMPL, RETT pair without the workaround for the instruction of the pair.
+  test-epilogue: null
+  test-prologue: null
+pre-conditions:
+- name: Pair
+  states:
+  - name: JmplRett
+    test-code: |
+      ctx->pair[ 0 ] = TxJmpl();
+      ctx->pair[ 1 ] = TxRett();
+      ctx->pair_count = 2;
+    text: |
+      While the instruction of the pair is a JMPL instruction, while a RETT
+      instruction follows it.
+  - name: JmplOther
+    test-code: |
+      ctx->pair[ 0 ] = TxJmpl();
+      ctx->pair[ 1 ] = TxNop();
+      ctx->pair_count = 2;
+    text: |
+      While the instruction of the pair is a JMPL instruction, while an instruction
+      other than RETT follows it.
+  - name: JmplLast
+    test-code: |
+      ctx->pair[ 0 ] = TxJmpl();
+      ctx->pair_count = 1;
+    text: |
+      While the instruction of the pair is a JMPL instruction, while the
+      ${../glossary/code-section:/term} ends after it.
+  - name: OtherRett
+    test-code: |
+      ctx->pair[ 0 ] = TxNop();
+      ctx->pair[ 1 ] = TxRett();
+      ctx->pair_count = 2;
+    text: |
+      While the instruction of the pair transfers no control, while a RETT
+      instruction follows it.
+  test-epilogue: null
+  test-prologue: null
+- name: Disable
+  states:
+  - name: Sta
+    test-code: |
+      ctx->disable = TxFormat3Asi( 3, 0x14, TX_L4, TX_G0, 2, TX_G0 );
+    text: |
+      While the sixth instruction before the instruction of the pair is an STA instruction with the address space identifier 2 and
+      the address [%g0].
+  - name: StaAsi
+    test-code: |
+      ctx->disable = TxFormat3Asi( 3, 0x14, TX_L4, TX_G0, 3, TX_G0 );
+    text: |
+      While the sixth instruction before the instruction of the pair is an STA instruction with the address space identifier 3 and
+      the address [%g0].
+  - name: StaAddress
+    test-code: |
+      ctx->disable = TxFormat3Asi( 3, 0x14, TX_L4, TX_L0, 2, TX_G0 );
+    text: |
+      While the sixth instruction before the instruction of the pair is an STA instruction with the address space identifier 2 and
+      the address [%l0].
+  - name: StaImmediate
+    test-code: |
+      ctx->disable = TxFormat3Imm( 3, 0x14, TX_L4, TX_G0, 2 << 5 );
+    text: |
+      While the sixth instruction before the instruction of the pair is an STA instruction with an immediate operand.
+  - name: Other
+    test-code: |
+      ctx->disable = TxNop();
+    text: |
+      While the sixth instruction before the instruction of the pair is no store.
+  - name: Absent
+    test-code: |
+      ctx->disable_absent = true;
+    text: |
+      While the ${../glossary/code-section:/term} starts with the fifth instruction
+      before the instruction of the pair.
+  test-epilogue: null
+  test-prologue: null
+- name: Reads
+  states:
+  - name: Both
+    test-code: |
+      ctx->reads[ 0 ] = TxNop();
+      ctx->reads[ 1 ] = TxFormat3Reg( 2, 0x02, TX_L1, TX_L1, TX_L1 );
+      ctx->reads[ 2 ] = TxFormat3Reg( 2, 0x02, TX_L2, TX_L2, TX_L2 );
+    text: |
+      While the fifth to third instructions before the instruction of the pair are a
+      NOP, OR %l1, %l1, %l1 and OR %l2, %l2, %l2.
+  - name: Reversed
+    test-code: |
+      ctx->reads[ 0 ] = TxFormat3Reg( 2, 0x02, TX_L2, TX_L2, TX_L2 );
+      ctx->reads[ 1 ] = TxFormat3Reg( 2, 0x02, TX_L1, TX_L1, TX_L1 );
+      ctx->reads[ 2 ] = TxNop();
+    text: |
+      While the fifth to third instructions before the instruction of the pair are OR
+      %l2, %l2, %l2, OR %l1, %l1, %l1 and a NOP.
+  - name: L1
+    test-code: |
+      ctx->reads[ 0 ] = TxNop();
+      ctx->reads[ 1 ] = TxFormat3Reg( 2, 0x02, TX_L1, TX_L1, TX_L1 );
+      ctx->reads[ 2 ] = TxNop();
+    text: |
+      While the fifth to third instructions before the instruction of the pair are a
+      NOP, OR %l1, %l1, %l1 and a NOP.
+  - name: L2
+    test-code: |
+      ctx->reads[ 0 ] = TxFormat3Reg( 2, 0x02, TX_L2, TX_L2, TX_L2 );
+      ctx->reads[ 1 ] = TxNop();
+      ctx->reads[ 2 ] = TxNop();
+    text: |
+      While the fifth to third instructions before the instruction of the pair are OR
+      %l2, %l2, %l2 and two NOPs.
+  - name: None
+    test-code: |
+      ctx->reads[ 0 ] = TxNop();
+      ctx->reads[ 1 ] = TxNop();
+      ctx->reads[ 2 ] = TxNop();
+    text: |
+      While the fifth to third instructions before the instruction of the pair are
+      three NOPs.
+  test-epilogue: null
+  test-prologue: null
+- name: Enable
+  states:
+  - name: Sta
+    test-code: |
+      ctx->enable = TxFormat3Asi( 3, 0x14, TX_L3, TX_G0, 2, TX_G0 );
+    text: |
+      While the second instruction before the instruction of the pair is an STA instruction with the address space identifier 2 and
+      the address [%g0].
+  - name: StaAsi
+    test-code: |
+      ctx->enable = TxFormat3Asi( 3, 0x14, TX_L3, TX_G0, 3, TX_G0 );
+    text: |
+      While the second instruction before the instruction of the pair is an STA instruction with the address space identifier 3 and
+      the address [%g0].
+  - name: StaAddress
+    test-code: |
+      ctx->enable = TxFormat3Asi( 3, 0x14, TX_L3, TX_L0, 2, TX_G0 );
+    text: |
+      While the second instruction before the instruction of the pair is an STA instruction with the address space identifier 2 and
+      the address [%l0].
+  - name: StaImmediate
+    test-code: |
+      ctx->enable = TxFormat3Imm( 3, 0x14, TX_L3, TX_G0, 2 << 5 );
+    text: |
+      While the second instruction before the instruction of the pair is an STA instruction with an immediate operand.
+  - name: Other
+    test-code: |
+      ctx->enable = TxNop();
+    text: |
+      While the second instruction before the instruction of the pair is no store.
+  test-epilogue: null
+  test-prologue: null
+rationale: |
+  Dimension Pair covers a JMPL instruction with and without a RETT instruction in
+  its delay slot and a RETT instruction after another instruction, 4 states.
+
+  Dimension Disable covers the STA instructions, the other instructions and the
+  start of the ${../glossary/code-section:/term}, 6 states. The STA states vary
+  the address space identifier, the address and the operand form of workaround
+  #1.
+
+  Dimension Enable covers the STA instructions and the other instructions, 5
+  states. The STA states vary the address space identifier, the address and the
+  operand form of workaround #1.
+
+  Dimension Reads covers the two register reads of workaround #1 in either order,
+  each read alone, and no read, 5 states.
+
+  Section 4.1 of the technical note names a JMPL, RETT pair as the return of a
+  trap handler which triggers the erratum. Section 5.1 gives workaround #1. It
+  disables the instruction cache with an STA instruction to the cache control
+  register at ASI 2, address 0. Three instructions follow, two of them read %l1
+  and %l2. An STA instruction to the same register enables the cache again. One
+  instruction separates it from the JMPL instruction. The register which the STA
+  instruction stores is the value of the cache control register, so any register
+  is valid. Section B.4 of SPARC V8 gives the address space identifier in the
+  instruction for i = 0 only. The test stores %l4 to disable and %l3 to enable the cache, as the
+  note does. The check reads the instructions in the order of the
+  ${../glossary/code-section:/term}.
+references: []
+requirement-type: functional
+skip-reasons: {}
+test-action: |
+  size_t i;
+
+  if ( !ctx->disable_absent ) {
+    TxAppend( &ctx->image, ctx->disable );
+  }
+
+  for ( i = 0; i < 3; ++i ) {
+    TxAppend( &ctx->image, ctx->reads[ i ] );
+  }
+
+  TxAppend( &ctx->image, ctx->enable );
+  TxAppend( &ctx->image, TxNop() );
+  ctx->offset = (uint32_t) ( 4 * ctx->image.count );
+
+  for ( i = 0; i < ctx->pair_count; ++i ) {
+    TxAppend( &ctx->image, ctx->pair[ i ] );
+  }
+
+  ctx->report = TxCheck( &ctx->image, NOTE_0018 );
+test-brief: null
+test-cleanup: null
+test-context:
+- brief: |
+    This member contains the image of the ELF file to check.
+  description: null
+  member: |
+    TxImage image
+- brief: |
+    This member contains the instructions of the pair.
+  description: null
+  member: |
+    uint32_t pair[ 2 ]
+- brief: |
+    This member contains the count of instructions of the pair.
+  description: null
+  member: |
+    size_t pair_count
+- brief: |
+    This member contains the sixth instruction before the pair.
+  description: null
+  member: |
+    uint32_t disable
+- brief: |
+    This member is true, if the code section starts after the sixth instruction
+    before the pair.
+  description: null
+  member: |
+    bool disable_absent
+- brief: |
+    This member contains the fifth to third instructions before the pair.
+  description: null
+  member: |
+    uint32_t reads[ 3 ]
+- brief: |
+    This member contains the second instruction before the pair.
+  description: null
+  member: |
+    uint32_t enable
+- brief: |
+    This member contains the offset of the instruction of the pair.
+  description: null
+  member: |
+    uint32_t offset
+- brief: |
+    This member references the report of the errata checker.
+  description: null
+  member: |
+    const char *report
+test-context-support: null
+test-description: null
+test-header: null
+test-includes: []
+test-local-includes:
+- nopinion.h
+- tx-support.h
+test-prepare: |
+  TxImageInit( &ctx->image );
+  ctx->disable_absent = false;
+test-setup: null
+test-stop: null
+test-support: null
+test-target: nopinion/tests/tc-check-tn-0018-rett.c
+test-teardown: null
+text: |
+  ${.:text-template}
+transition-map:
+- enabled-by: true
+  post-conditions:
+    Finding: Definite
+  pre-conditions:
+    Pair:
+    - JmplRett
+    Disable:
+    - StaAsi
+    - StaAddress
+    - StaImmediate
+    - Other
+    - Absent
+    Reads:
+    - Both
+    - Reversed
+    Enable:
+    - Sta
+- enabled-by: true
+  post-conditions:
+    Finding: Definite
+  pre-conditions:
+    Pair:
+    - JmplRett
+    Disable: all
+    Reads: all
+    Enable:
+    - StaAsi
+    - StaAddress
+    - StaImmediate
+    - Other
+- enabled-by: true
+  post-conditions:
+    Finding: Definite
+  pre-conditions:
+    Pair:
+    - JmplRett
+    Disable: all
+    Reads:
+    - L1
+    - L2
+    - None
+    Enable:
+    - Sta
+- enabled-by: true
+  post-conditions:
+    Finding: None
+  pre-conditions:
+    Pair: all
+    Disable:
+    - Sta
+    Reads:
+    - Both
+    - Reversed
+    Enable:
+    - Sta
+- enabled-by: true
+  post-conditions:
+    Finding: None
+  pre-conditions:
+    Pair:
+    - JmplOther
+    - JmplLast
+    - OtherRett
+    Disable:
+    - StaAsi
+    - StaAddress
+    - StaImmediate
+    - Other
+    - Absent
+    Reads:
+    - Both
+    - Reversed
+    Enable:
+    - Sta
+- enabled-by: true
+  post-conditions:
+    Finding: None
+  pre-conditions:
+    Pair:
+    - JmplOther
+    - JmplLast
+    - OtherRett
+    Disable: all
+    Reads: all
+    Enable:
+    - StaAsi
+    - StaAddress
+    - StaImmediate
+    - Other
+- enabled-by: true
+  post-conditions:
+    Finding: None
+  pre-conditions:
+    Pair:
+    - JmplOther
+    - JmplLast
+    - OtherRett
+    Disable: all
+    Reads:
+    - L1
+    - L2
+    - None
+    Enable:
+    - Sta
+type: requirement

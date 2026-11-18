@@ -1,0 +1,258 @@
+SPDX-License-Identifier: CC-BY-SA-4.0 OR BSD-2-Clause
+copyrights:
+- Copyright (C) 2026 embedded brains GmbH & Co. KG
+enabled-by: true
+functional-type: action
+links:
+- role: requirement-refinement
+  uid: tn-0013
+post-conditions:
+- name: Finding
+  states:
+  - name: None
+    test-code: |
+      T_eq_int( TxCountAt( ctx->report, 0, "TN-0013" ), 0 );
+    text: |
+      The errata checker shall report no ${../glossary/finding:/term} of the missing
+      FDIV/FSQRT result erratum for the first instruction.
+  - name: Definite
+    test-code: |
+      T_eq_int( TxCountAt( ctx->report, 0, "TN-0013" ), 1 );
+      T_false( TxIsPossibleAt( ctx->report, 0, "TN-0013" ) );
+    text: |
+      The errata checker shall report one ${../glossary/definite-finding:/term} of
+      the missing FDIV/FSQRT result erratum for the first instruction.
+  test-epilogue: null
+  test-prologue: null
+pre-conditions:
+- name: Second
+  states:
+  - name: Independent
+    test-code: |
+      ctx->code[ 1 ] = TxFpop1( TX_FADDD, 2, 4, 6 );
+    text: |
+      While the second instruction is an FPop1 instruction which neither reads nor
+      writes a register of the destination of the first instruction.
+  - name: ReadsDst
+    test-code: |
+      ctx->code[ 1 ] = TxFpop1( TX_FADDD, 2, 16, 6 );
+    text: |
+      While the second instruction is an FPop1 instruction which reads the
+      destination of the first instruction.
+  - name: WritesDst
+    test-code: |
+      ctx->code[ 1 ] = TxFpop1( TX_FADDD, 16, 4, 6 );
+    text: |
+      While the second instruction is an FPop1 instruction which writes the
+      destination of the first instruction.
+  - name: ReadsHalf
+    test-code: |
+      ctx->code[ 1 ] = TxFpop1( TX_FADDS, 2, 17, 6 );
+    text: |
+      While the second instruction is an FPop1 instruction which reads one single
+      register of the double destination of the first instruction.
+  test-epilogue: null
+  test-prologue: null
+- name: Third
+  states:
+  - name: Other
+    test-code: |
+      ctx->code[ 2 ] = TxAdd();
+    text: |
+      While the third instruction is no floating-point instruction and transfers no
+      control.
+  - name: FPop2Independent
+    test-code: |
+      ctx->code[ 2 ] = TxFpop2( TX_FCMPS, 4, 6 );
+    text: |
+      While the third instruction is an FPop2 instruction which reads no register of
+      the destination of the first instruction.
+  - name: FPop2ReadsDst
+    test-code: |
+      ctx->code[ 2 ] = TxFpop2( TX_FCMPS, 17, 6 );
+    text: |
+      While the third instruction is an FPop2 instruction which reads a register of
+      the destination of the first instruction.
+  - name: StoreIndependent
+    test-code: |
+      ctx->code[ 2 ] = TxStfReg( 4 );
+    text: |
+      While the third instruction is a store of a floating-point register which reads
+      no register of the destination of the first instruction.
+  - name: StoreReadsDst
+    test-code: |
+      ctx->code[ 2 ] = TxStfReg( 16 );
+    text: |
+      While the third instruction is a store of a floating-point register which reads
+      a register of the destination of the first instruction.
+  test-epilogue: null
+  test-prologue: null
+- name: Fourth
+  states:
+  - name: Independent
+    test-code: |
+      ctx->code[ 3 ] = TxFpop1( TX_FADDD, 8, 4, 6 );
+    text: |
+      While the fourth instruction is an FPop1 instruction which neither reads nor
+      writes a register of the destination of the first instruction.
+  - name: ReadsDst
+    test-code: |
+      ctx->code[ 3 ] = TxFpop1( TX_FADDD, 8, 16, 6 );
+    text: |
+      While the fourth instruction is an FPop1 instruction which reads the
+      destination of the first instruction.
+  test-epilogue: null
+  test-prologue: null
+- name: Fifth
+  states:
+  - name: Independent
+    test-code: |
+      ctx->code[ 4 ] = TxFpop1( TX_FDIVD, 24, 10, 4 );
+    text: |
+      While the fifth instruction is an FDIV instruction which neither reads nor
+      writes a register of the destination of the first instruction.
+  - name: ReadsDst
+    test-code: |
+      ctx->code[ 4 ] = TxFpop1( TX_FDIVD, 24, 16, 4 );
+    text: |
+      While the fifth instruction is an FDIV instruction which reads the destination
+      of the first instruction.
+  - name: WritesDst
+    test-code: |
+      ctx->code[ 4 ] = TxFpop1( TX_FDIVD, 16, 10, 4 );
+    text: |
+      While the fifth instruction is an FDIV instruction which writes the destination
+      of the first instruction.
+  test-epilogue: null
+  test-prologue: null
+rationale: |
+  Dimension Second covers the dependencies of an FPop1 instruction on the
+  destination of the first instruction, 4 states.
+
+  Dimension Third covers the instructions of SPARC V8 which transfer no control
+  and are no FPop1 instruction, with their dependencies, 5 states.
+
+  Dimension Fourth covers the dependencies of an FPop1 instruction on the
+  destination of the first instruction, 2 states.
+
+  Dimension Fifth covers the dependencies of an FDIV instruction on the
+  destination of the first instruction, 3 states.
+
+  The first instruction is an FDIV instruction with the double destination
+
+  %f16 and %f17.  The fourth instruction is no FDIV and no FSQRT
+
+  instruction, so only the window of three instructions can match.
+references: []
+requirement-type: functional
+skip-reasons: {}
+test-action: |
+  size_t i;
+
+  ctx->code[ 0 ] = TxFpop1( TX_FDIVD, 16, 12, 14 );
+
+  for ( i = 0; i < T_ARRAY_SIZE( ctx->code ); ++i ) {
+    TxAppend( &ctx->image, ctx->code[ i ] );
+  }
+
+  ctx->report = TxCheck( &ctx->image, NOTE_0013 );
+test-brief: null
+test-cleanup: null
+test-context:
+- brief: |
+    This member contains the image of the ELF file to check.
+  description: null
+  member: |
+    TxImage image
+- brief: |
+    This member contains the instructions of the code section.
+  description: null
+  member: |
+    uint32_t code[ 5 ]
+- brief: |
+    This member references the report of the errata checker.
+  description: null
+  member: |
+    const char *report
+test-context-support: null
+test-description: null
+test-header: null
+test-includes: []
+test-local-includes:
+- nopinion.h
+- tx-support.h
+test-prepare: |
+  TxImageInit( &ctx->image );
+test-setup: null
+test-stop: null
+test-support: null
+test-target: nopinion/tests/tc-check-tn-0013-dependency.c
+test-teardown: null
+text: |
+  ${.:text-template}
+transition-map:
+- enabled-by: true
+  post-conditions:
+    Finding: Definite
+  pre-conditions:
+    Second:
+    - Independent
+    Third:
+    - Other
+    - FPop2Independent
+    - StoreIndependent
+    Fourth:
+    - Independent
+    Fifth:
+    - Independent
+- enabled-by: true
+  post-conditions:
+    Finding: None
+  pre-conditions:
+    Second:
+    - ReadsDst
+    - WritesDst
+    - ReadsHalf
+    Third: all
+    Fourth: all
+    Fifth: all
+- enabled-by: true
+  post-conditions:
+    Finding: None
+  pre-conditions:
+    Second:
+    - Independent
+    Third:
+    - FPop2ReadsDst
+    - StoreReadsDst
+    Fourth: all
+    Fifth: all
+- enabled-by: true
+  post-conditions:
+    Finding: None
+  pre-conditions:
+    Second:
+    - Independent
+    Third:
+    - Other
+    - FPop2Independent
+    - StoreIndependent
+    Fourth:
+    - ReadsDst
+    Fifth: all
+- enabled-by: true
+  post-conditions:
+    Finding: None
+  pre-conditions:
+    Second:
+    - Independent
+    Third:
+    - Other
+    - FPop2Independent
+    - StoreIndependent
+    Fourth:
+    - Independent
+    Fifth:
+    - ReadsDst
+    - WritesDst
+type: requirement

@@ -1,0 +1,394 @@
+SPDX-License-Identifier: CC-BY-SA-4.0 OR BSD-2-Clause
+copyrights:
+- Copyright (C) 2026 embedded brains GmbH & Co. KG
+enabled-by: true
+functional-type: action
+links:
+- role: requirement-refinement
+  uid: input
+post-conditions:
+- name: Error
+  states:
+  - name: None
+    test-code: |
+      T_eq_str( TxErrors(), "" );
+    text: |
+      The errata checker shall report no error.
+  - name: NotElf
+    test-code: |
+      T_eq_str( TxErrors(), "nopinion: t.o: not an ELF file\n" );
+    text: |
+      The errata checker shall report the error "not an ELF file" for the file.
+  - name: NotElf32Be
+    test-code: |
+      T_eq_str( TxErrors(), "nopinion: t.o: not an ELF32 big-endian file\n" );
+    text: |
+      The errata checker shall report the error "not an ELF32 big-endian file" for
+      the file.
+  - name: NotSparc
+    test-code: |
+      T_eq_str( TxErrors(), "nopinion: t.o: not a SPARC ELF file\n" );
+    text: |
+      The errata checker shall report the error "not a SPARC ELF file" for the file.
+  - name: BadSectionHeaders
+    test-code: |
+      T_eq_str( TxErrors(), "nopinion: t.o: bad section headers\n" );
+    text: |
+      The errata checker shall report the error "bad section headers" for the file.
+  - name: BadStringTable
+    test-code: |
+      T_eq_str( TxErrors(), "nopinion: t.o: bad string table\n" );
+    text: |
+      The errata checker shall report the error "bad string table" for the file.
+  - name: BadCodeSection
+    test-code: |
+      T_eq_str( TxErrors(), "nopinion: t.o: bad code section\n" );
+    text: |
+      The errata checker shall report the error "bad code section" for the file.
+  - name: OutOfMemory
+    test-code: |
+      T_eq_str( TxErrors(), "nopinion: t.o: out of memory\n" );
+    text: |
+      The errata checker shall report the error "out of memory" for the file.
+  test-epilogue: null
+  test-prologue: null
+- name: Checked
+  states:
+  - name: 'Yes'
+    test-code: |
+      T_eq_int( TxCountAt( ctx->report, 0, "TN-0009" ), 1 );
+    text: |
+      The errata checker shall check the ${../glossary/code-section:/term}.
+  - name: 'No'
+    test-code: |
+      T_eq_int( TxCountAt( ctx->report, 0, "TN-0009" ), 0 );
+    text: |
+      The errata checker shall check no ${../glossary/code-section:/term}.
+  test-epilogue: null
+  test-prologue: null
+pre-conditions:
+- name: File
+  states:
+  - name: Valid
+    test-code: |
+      /* The file is valid */
+    text: |
+      While the file is a valid ELF file with a ${../glossary/code-section:/term}.
+  - name: Short
+    test-code: |
+      ctx->size = 51;
+    text: |
+      While the file is shorter than an ELF header.
+  - name: Magic
+    test-code: |
+      ctx->buf[ 1 ] = 'X';
+    text: |
+      While the file is an ELF file with a wrong magic number.
+  - name: Class64
+    test-code: |
+      ctx->buf[ 4 ] = 2;
+    text: |
+      While the file is an ELF file of the 64-bit class.
+  - name: LittleEndian
+    test-code: |
+      ctx->buf[ 5 ] = 1;
+    text: |
+      While the file is an ELF file with little-endian data.
+  - name: OtherMachine
+    test-code: |
+      TxPut16( ctx->buf + 18, 3 );
+    text: |
+      While the file is an ELF file for another machine than SPARC.
+  - name: Sparc32Plus
+    test-code: |
+      TxPut16( ctx->buf + 18, 18 );
+    text: |
+      While the file is an ELF file for the machine SPARC32PLUS.
+  - name: NoSections
+    test-code: |
+      TxPut16( ctx->buf + 48, 0 );
+    text: |
+      While the file is an ELF file without section headers.
+  - name: EntrySize
+    test-code: |
+      TxPut16( ctx->buf + 46, 39 );
+    text: |
+      While the file is an ELF file with a section header entry size of less than 40
+      bytes.
+  - name: TableOutside
+    test-code: |
+      TxPut32( ctx->buf + 32, 0x10000 );
+    text: |
+      While the file is an ELF file whose section header table exceeds the file.
+  - name: StringIndex
+    test-code: |
+      TxPut16( ctx->buf + 50, 6 );
+    text: |
+      While the file is an ELF file whose section name string table index exceeds the
+      section count.
+  - name: StringOutside
+    test-code: |
+      TxPut32(
+        ctx->buf + TxSectionHeader( ctx->buf, TX_SECTION_SHSTRTAB ) + 16,
+        0x10000
+      );
+    text: |
+      While the file is an ELF file whose section name string table exceeds the file.
+  - name: CodeOutside
+    test-code: |
+      TxPut32(
+        ctx->buf + TxSectionHeader( ctx->buf, TX_SECTION_TEXT ) + 16,
+        0x10000
+      );
+    text: |
+      While the file is an ELF file whose ${../glossary/code-section:/term} exceeds
+      the file.
+  - name: CodeTooLong
+    test-code: |
+      TxPut32(
+        ctx->buf + TxSectionHeader( ctx->buf, TX_SECTION_TEXT ) + 20,
+        0x10000
+      );
+    text: |
+      While the file is an ELF file whose ${../glossary/code-section:/term} starts in
+      the file and ends beyond it.
+  - name: CodeName
+    test-code: |
+      TxPut32( ctx->buf + TxSectionHeader( ctx->buf, TX_SECTION_TEXT ), 0x10000 );
+    text: |
+      While the file is an ELF file whose ${../glossary/code-section:/term} name
+      exceeds the section name string table.
+  - name: CodeSmall
+    test-code: |
+      TxPut32( ctx->buf + TxSectionHeader( ctx->buf, TX_SECTION_TEXT ) + 20, 3 );
+    text: |
+      While the file is an ELF file whose ${../glossary/code-section:/term} is
+      shorter than one instruction.
+  - name: NotExecutable
+    test-code: |
+      TxPut32( ctx->buf + TxSectionHeader( ctx->buf, TX_SECTION_TEXT ) + 8, 2 );
+    text: |
+      While the file is an ELF file whose only SHT_PROGBITS section lacks the flag
+      SHF_EXECINSTR.
+  - name: NoBits
+    test-code: |
+      TxPut32( ctx->buf + TxSectionHeader( ctx->buf, TX_SECTION_TEXT ) + 4, 8 );
+    text: |
+      While the file is an ELF file whose only section with the flag SHF_EXECINSTR
+      has the type SHT_NOBITS.
+  - name: NoMemoryInfo
+    test-code: |
+      TxFailNext( TX_FAIL_CALLOC );
+    text: |
+      While the file is a valid ELF file, while the allocation of the instruction
+      information fails.
+  - name: NoMemoryTarget
+    test-code: |
+      TxFailNext( TX_FAIL_MALLOC );
+    text: |
+      While the file is a valid ELF file, while the allocation of the branch targets
+      fails.
+  test-epilogue: null
+  test-prologue: null
+rationale: |
+  Dimension File covers the content of a file which is no archive, 20 states.
+
+  The ELF specification defines the ELF header and the section header table. The
+  errata checker accepts a file of the class ELFCLASS32 with the data encoding
+  ELFDATA2MSB for the machine EM_SPARC or EM_SPARC32PLUS. It checks each section
+  of the type SHT_PROGBITS with the flag SHF_EXECINSTR which holds at least one
+  instruction.
+
+  The test builds a relocatable ELF file whose ${../glossary/code-section:/term}
+  holds a store, an ADD and a store. The state of the file changes that file. The
+  ${../glossary/finding:/term} of the stale cache entry erratum for the first
+  store shows that the errata checker checked the
+  ${../glossary/code-section:/term}. A link time wrapper lets an allocation fail.
+references: []
+requirement-type: functional
+skip-reasons: {}
+test-action: |
+  ctx->report = TxCheckBuffer( ctx->buf, ctx->size, NOTE_0009 );
+  TxFailNext( 0 );
+test-brief: null
+test-cleanup: null
+test-context:
+- brief: |
+    This member contains the ELF file.
+  description: null
+  member: |
+    uint8_t buf[ 4096 ]
+- brief: |
+    This member contains the size of the ELF file.
+  description: null
+  member: |
+    size_t size
+- brief: |
+    This member references the report of the errata checker.
+  description: null
+  member: |
+    const char *report
+test-context-support: null
+test-description: null
+test-header: null
+test-includes: []
+test-local-includes:
+- nopinion.h
+- tx-support.h
+test-prepare: |
+  TxImage image;
+
+  TxImageInit( &image );
+  TxAppend( &image, TxSt() );
+  TxAppend( &image, TxAdd() );
+  TxAppend( &image, TxSt() );
+  ctx->size = TxBuildElf( &image, ctx->buf, sizeof( ctx->buf ) );
+test-setup: null
+test-stop: null
+test-support: null
+test-target: nopinion/tests/tc-input-elf.c
+test-teardown: null
+text: |
+  ${.:text-template}
+transition-map:
+- enabled-by: true
+  post-conditions:
+    Error: None
+    Checked: 'Yes'
+  pre-conditions:
+    File:
+    - Valid
+- enabled-by: true
+  post-conditions:
+    Error: NotElf
+    Checked: 'No'
+  pre-conditions:
+    File:
+    - Short
+- enabled-by: true
+  post-conditions:
+    Error: NotElf
+    Checked: 'No'
+  pre-conditions:
+    File:
+    - Magic
+- enabled-by: true
+  post-conditions:
+    Error: NotElf32Be
+    Checked: 'No'
+  pre-conditions:
+    File:
+    - Class64
+- enabled-by: true
+  post-conditions:
+    Error: NotElf32Be
+    Checked: 'No'
+  pre-conditions:
+    File:
+    - LittleEndian
+- enabled-by: true
+  post-conditions:
+    Error: NotSparc
+    Checked: 'No'
+  pre-conditions:
+    File:
+    - OtherMachine
+- enabled-by: true
+  post-conditions:
+    Error: None
+    Checked: 'Yes'
+  pre-conditions:
+    File:
+    - Sparc32Plus
+- enabled-by: true
+  post-conditions:
+    Error: None
+    Checked: 'No'
+  pre-conditions:
+    File:
+    - NoSections
+- enabled-by: true
+  post-conditions:
+    Error: BadSectionHeaders
+    Checked: 'No'
+  pre-conditions:
+    File:
+    - EntrySize
+- enabled-by: true
+  post-conditions:
+    Error: BadSectionHeaders
+    Checked: 'No'
+  pre-conditions:
+    File:
+    - TableOutside
+- enabled-by: true
+  post-conditions:
+    Error: BadSectionHeaders
+    Checked: 'No'
+  pre-conditions:
+    File:
+    - StringIndex
+- enabled-by: true
+  post-conditions:
+    Error: BadStringTable
+    Checked: 'No'
+  pre-conditions:
+    File:
+    - StringOutside
+- enabled-by: true
+  post-conditions:
+    Error: BadCodeSection
+    Checked: 'No'
+  pre-conditions:
+    File:
+    - CodeOutside
+- enabled-by: true
+  post-conditions:
+    Error: BadCodeSection
+    Checked: 'No'
+  pre-conditions:
+    File:
+    - CodeTooLong
+- enabled-by: true
+  post-conditions:
+    Error: BadCodeSection
+    Checked: 'No'
+  pre-conditions:
+    File:
+    - CodeName
+- enabled-by: true
+  post-conditions:
+    Error: None
+    Checked: 'No'
+  pre-conditions:
+    File:
+    - CodeSmall
+- enabled-by: true
+  post-conditions:
+    Error: None
+    Checked: 'No'
+  pre-conditions:
+    File:
+    - NotExecutable
+- enabled-by: true
+  post-conditions:
+    Error: None
+    Checked: 'No'
+  pre-conditions:
+    File:
+    - NoBits
+- enabled-by: true
+  post-conditions:
+    Error: OutOfMemory
+    Checked: 'No'
+  pre-conditions:
+    File:
+    - NoMemoryInfo
+- enabled-by: true
+  post-conditions:
+    Error: OutOfMemory
+    Checked: 'No'
+  pre-conditions:
+    File:
+    - NoMemoryTarget
+type: requirement

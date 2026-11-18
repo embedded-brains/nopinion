@@ -1,0 +1,53 @@
+SPDX-License-Identifier: CC-BY-SA-4.0 OR BSD-2-Clause
+build-type: test-program
+cflags: []
+copyrights:
+- Copyright (C) 2026 embedded brains GmbH & Co. KG
+cppflags: []
+cxxflags: []
+enabled-by: true
+features: c cprogram
+includes:
+- nopinion/src
+- nopinion/tests
+ldflags:
+- -Wl,--wrap=calloc
+- -Wl,--wrap=malloc
+- -Wl,--wrap=fstat
+- -Wl,--wrap=mmap
+links: []
+source:
+- nopinion/tests/tc-program.c
+- nopinion/tests/tc-cli.c
+- nopinion/tests/tc-report-line.c
+- nopinion/tests/tc-report-options.c
+- nopinion/tests/tc-input-file.c
+- nopinion/tests/tc-input-archive.c
+- nopinion/tests/tc-input-relocations.c
+- nopinion/tests/tc-input-symbols.c
+- nopinion/tests/tc-input-elf.c
+- nopinion/tests/tc-check-tn-0009.c
+- nopinion/tests/tc-check-tn-0011.c
+- nopinion/tests/tc-check-tn-0012.c
+- nopinion/tests/tc-check-tn-0013-dependency.c
+- nopinion/tests/tc-check-tn-0013-sequence.c
+- nopinion/tests/tc-check-tn-0016-fpop1.c
+- nopinion/tests/tc-check-tn-0016-stfsr.c
+- nopinion/tests/tc-check-tn-0018-rett.c
+- nopinion/tests/tc-check-tn-0018-trap.c
+- nopinion/tests/tc-check-asi-0x1c.c
+- nopinion/tests/tc-check-power-down.c
+- nopinion/tests/tc-cli-select.c
+- nopinion/tests/tc-decode-fpop.c
+- nopinion/tests/tc-decode-icc.c
+- nopinion/tests/tc-decode-memory.c
+- nopinion/tests/tc-flow-delay-slot.c
+- nopinion/tests/tc-flow-trap.c
+- nopinion/tests/ts-nopinion.c
+- nopinion/tests/tx-support.c
+- nopinion/tests/tx-wrap.c
+stlib: []
+target: nopinion-validation
+type: build
+use-after: []
+use-before: []

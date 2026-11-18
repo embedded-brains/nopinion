@@ -1,0 +1,364 @@
+SPDX-License-Identifier: CC-BY-SA-4.0 OR BSD-2-Clause
+copyrights:
+- Copyright (C) 2026 embedded brains GmbH & Co. KG
+enabled-by: true
+functional-type: action
+links:
+- role: requirement-refinement
+  uid: decode
+post-conditions:
+- name: Class
+  states:
+  - name: StoreWord
+    test-code: |
+      T_true( ctx->probe.sequence_a );
+      T_false( ctx->probe.sequence_b );
+      T_false( ctx->probe.middle );
+      T_false( ctx->probe.in_delay_slot );
+    text: |
+      The errata checker shall classify the instruction as a store of word size or
+      less.
+  - name: StoreDouble
+    test-code: |
+      T_false( ctx->probe.sequence_a );
+      T_true( ctx->probe.sequence_b );
+      T_false( ctx->probe.middle );
+      T_false( ctx->probe.in_delay_slot );
+    text: |
+      The errata checker shall classify the instruction as a store of double word
+      size.
+  - name: Atomic
+    test-code: |
+      T_false( ctx->probe.sequence_a );
+      T_false( ctx->probe.sequence_b );
+      T_false( ctx->probe.middle );
+      T_true( ctx->probe.in_delay_slot );
+    text: |
+      The errata checker shall classify the instruction as an atomic load-store
+      instruction.
+  - name: Load
+    test-code: |
+      T_false( ctx->probe.sequence_a );
+      T_false( ctx->probe.sequence_b );
+      T_false( ctx->probe.middle );
+      T_false( ctx->probe.in_delay_slot );
+    text: |
+      The errata checker shall classify the instruction as a load which is no atomic
+      load-store instruction.
+  test-epilogue: null
+  test-prologue: null
+pre-conditions:
+- name: Instruction
+  states:
+  - name: Ld
+    test-code: |
+      ctx->instruction = TxFormat3Reg( 3, 0x00, TX_G1, TX_O0, TX_G0 );
+    text: |
+      While the instruction is an LD instruction.
+  - name: Ldub
+    test-code: |
+      ctx->instruction = TxFormat3Reg( 3, 0x01, TX_G1, TX_O0, TX_G0 );
+    text: |
+      While the instruction is an LDUB instruction.
+  - name: Lduh
+    test-code: |
+      ctx->instruction = TxFormat3Reg( 3, 0x02, TX_G1, TX_O0, TX_G0 );
+    text: |
+      While the instruction is an LDUH instruction.
+  - name: Ldd
+    test-code: |
+      ctx->instruction = TxFormat3Reg( 3, 0x03, TX_G1, TX_O0, TX_G0 );
+    text: |
+      While the instruction is an LDD instruction.
+  - name: St
+    test-code: |
+      ctx->instruction = TxFormat3Reg( 3, 0x04, TX_G1, TX_O0, TX_G0 );
+    text: |
+      While the instruction is an ST instruction.
+  - name: Stb
+    test-code: |
+      ctx->instruction = TxFormat3Reg( 3, 0x05, TX_G1, TX_O0, TX_G0 );
+    text: |
+      While the instruction is an STB instruction.
+  - name: Sth
+    test-code: |
+      ctx->instruction = TxFormat3Reg( 3, 0x06, TX_G1, TX_O0, TX_G0 );
+    text: |
+      While the instruction is an STH instruction.
+  - name: Std
+    test-code: |
+      ctx->instruction = TxFormat3Reg( 3, 0x07, TX_G1, TX_O0, TX_G0 );
+    text: |
+      While the instruction is an STD instruction.
+  - name: Ldsb
+    test-code: |
+      ctx->instruction = TxFormat3Reg( 3, 0x09, TX_G1, TX_O0, TX_G0 );
+    text: |
+      While the instruction is an LDSB instruction.
+  - name: Ldsh
+    test-code: |
+      ctx->instruction = TxFormat3Reg( 3, 0x0a, TX_G1, TX_O0, TX_G0 );
+    text: |
+      While the instruction is an LDSH instruction.
+  - name: Ldstub
+    test-code: |
+      ctx->instruction = TxFormat3Reg( 3, 0x0d, TX_G1, TX_O0, TX_G0 );
+    text: |
+      While the instruction is an LDSTUB instruction.
+  - name: Swap
+    test-code: |
+      ctx->instruction = TxFormat3Reg( 3, 0x0f, TX_G1, TX_O0, TX_G0 );
+    text: |
+      While the instruction is an SWAP instruction.
+  - name: Lda
+    test-code: |
+      ctx->instruction = TxFormat3Asi( 3, 0x10, TX_G1, TX_O0, 10, TX_O1 );
+    text: |
+      While the instruction is an LDA instruction.
+  - name: Lduba
+    test-code: |
+      ctx->instruction = TxFormat3Asi( 3, 0x11, TX_G1, TX_O0, 10, TX_O1 );
+    text: |
+      While the instruction is an LDUBA instruction.
+  - name: Lduha
+    test-code: |
+      ctx->instruction = TxFormat3Asi( 3, 0x12, TX_G1, TX_O0, 10, TX_O1 );
+    text: |
+      While the instruction is an LDUHA instruction.
+  - name: Ldda
+    test-code: |
+      ctx->instruction = TxFormat3Asi( 3, 0x13, TX_G1, TX_O0, 10, TX_O1 );
+    text: |
+      While the instruction is an LDDA instruction.
+  - name: Sta
+    test-code: |
+      ctx->instruction = TxFormat3Asi( 3, 0x14, TX_G1, TX_O0, 10, TX_O1 );
+    text: |
+      While the instruction is an STA instruction.
+  - name: Stba
+    test-code: |
+      ctx->instruction = TxFormat3Asi( 3, 0x15, TX_G1, TX_O0, 10, TX_O1 );
+    text: |
+      While the instruction is an STBA instruction.
+  - name: Stha
+    test-code: |
+      ctx->instruction = TxFormat3Asi( 3, 0x16, TX_G1, TX_O0, 10, TX_O1 );
+    text: |
+      While the instruction is an STHA instruction.
+  - name: Stda
+    test-code: |
+      ctx->instruction = TxFormat3Asi( 3, 0x17, TX_G1, TX_O0, 10, TX_O1 );
+    text: |
+      While the instruction is an STDA instruction.
+  - name: Ldsba
+    test-code: |
+      ctx->instruction = TxFormat3Asi( 3, 0x19, TX_G1, TX_O0, 10, TX_O1 );
+    text: |
+      While the instruction is an LDSBA instruction.
+  - name: Ldsha
+    test-code: |
+      ctx->instruction = TxFormat3Asi( 3, 0x1a, TX_G1, TX_O0, 10, TX_O1 );
+    text: |
+      While the instruction is an LDSHA instruction.
+  - name: Ldstuba
+    test-code: |
+      ctx->instruction = TxFormat3Asi( 3, 0x1d, TX_G1, TX_O0, 10, TX_O1 );
+    text: |
+      While the instruction is an LDSTUBA instruction.
+  - name: Swapa
+    test-code: |
+      ctx->instruction = TxFormat3Asi( 3, 0x1f, TX_G1, TX_O0, 10, TX_O1 );
+    text: |
+      While the instruction is an SWAPA instruction.
+  - name: Ldf
+    test-code: |
+      ctx->instruction = TxFormat3Reg( 3, 0x20, TX_G1, TX_O0, TX_G0 );
+    text: |
+      While the instruction is an LDF instruction.
+  - name: Ldfsr
+    test-code: |
+      ctx->instruction = TxFormat3Reg( 3, 0x21, TX_G1, TX_O0, TX_G0 );
+    text: |
+      While the instruction is an LDFSR instruction.
+  - name: Lddf
+    test-code: |
+      ctx->instruction = TxFormat3Reg( 3, 0x23, TX_G1, TX_O0, TX_G0 );
+    text: |
+      While the instruction is an LDDF instruction.
+  - name: Stf
+    test-code: |
+      ctx->instruction = TxFormat3Reg( 3, 0x24, TX_G1, TX_O0, TX_G0 );
+    text: |
+      While the instruction is an STF instruction.
+  - name: Stfsr
+    test-code: |
+      ctx->instruction = TxFormat3Reg( 3, 0x25, TX_G1, TX_O0, TX_G0 );
+    text: |
+      While the instruction is an STFSR instruction.
+  - name: Stdfq
+    test-code: |
+      ctx->instruction = TxFormat3Reg( 3, 0x26, TX_G1, TX_O0, TX_G0 );
+    text: |
+      While the instruction is an STDFQ instruction.
+  - name: Stdf
+    test-code: |
+      ctx->instruction = TxFormat3Reg( 3, 0x27, TX_G1, TX_O0, TX_G0 );
+    text: |
+      While the instruction is an STDF instruction.
+  - name: Ldc
+    test-code: |
+      ctx->instruction = TxFormat3Reg( 3, 0x30, TX_G1, TX_O0, TX_G0 );
+    text: |
+      While the instruction is an LDC instruction.
+  - name: Ldcsr
+    test-code: |
+      ctx->instruction = TxFormat3Reg( 3, 0x31, TX_G1, TX_O0, TX_G0 );
+    text: |
+      While the instruction is an LDCSR instruction.
+  - name: Lddc
+    test-code: |
+      ctx->instruction = TxFormat3Reg( 3, 0x33, TX_G1, TX_O0, TX_G0 );
+    text: |
+      While the instruction is an LDDC instruction.
+  - name: Stc
+    test-code: |
+      ctx->instruction = TxFormat3Reg( 3, 0x34, TX_G1, TX_O0, TX_G0 );
+    text: |
+      While the instruction is an STC instruction.
+  - name: Stcsr
+    test-code: |
+      ctx->instruction = TxFormat3Reg( 3, 0x35, TX_G1, TX_O0, TX_G0 );
+    text: |
+      While the instruction is an STCSR instruction.
+  - name: Stdcq
+    test-code: |
+      ctx->instruction = TxFormat3Reg( 3, 0x36, TX_G1, TX_O0, TX_G0 );
+    text: |
+      While the instruction is an STDCQ instruction.
+  - name: Stdc
+    test-code: |
+      ctx->instruction = TxFormat3Reg( 3, 0x37, TX_G1, TX_O0, TX_G0 );
+    text: |
+      While the instruction is an STDC instruction.
+  - name: Casa
+    test-code: |
+      ctx->instruction = TxFormat3Asi( 3, 0x3c, TX_G1, TX_O0, 10, TX_O1 );
+    text: |
+      While the instruction is a CASA instruction.
+  - name: Undefined
+    test-code: |
+      ctx->instruction = TxFormat3Reg( 3, 0x08, TX_G1, TX_O0, TX_G0 );
+    text: |
+      While the instruction is a memory instruction with an undefined op3 field.
+  test-epilogue: null
+  test-prologue: null
+rationale: |
+  Dimension Instruction covers the memory instructions of table F-4 of SPARC V8
+  and CASA, 40 states.
+
+  The instructions of section B.1, B.2 and B.3 are loads. The instructions of
+  section B.4, B.5 and B.6 are stores. A store of a double word stores two
+  registers. The instructions of section B.7 and B.8 and CASA are atomic
+  load-store instructions. An undefined op3 field causes an illegal_instruction
+  trap, so the instruction stores nothing.
+
+  The test observes the class through the stale cache entry erratum and the AHB
+  lock release erratum. A store of word size or less starts sequence A. A store
+  of double word size starts sequence B. No memory instruction is the middle
+  instruction of sequence A. Only an atomic instruction in a delay slot gives a
+  finding of the AHB lock release erratum.
+references: []
+requirement-type: functional
+skip-reasons: {}
+test-action: |
+  TxProbeMemory( ctx->instruction, &ctx->probe );
+test-brief: null
+test-cleanup: null
+test-context:
+- brief: |
+    This member contains the instruction.
+  description: null
+  member: |
+    uint32_t instruction
+- brief: |
+    This member contains the result of the probe of the instruction.
+  description: null
+  member: |
+    TxMemoryProbe probe
+test-context-support: null
+test-description: null
+test-header: null
+test-includes: []
+test-local-includes:
+- nopinion.h
+- tx-support.h
+test-prepare: null
+test-setup: null
+test-stop: null
+test-support: null
+test-target: nopinion/tests/tc-decode-memory.c
+test-teardown: null
+text: |
+  ${.:text-template}
+transition-map:
+- enabled-by: true
+  post-conditions:
+    Class: StoreWord
+  pre-conditions:
+    Instruction:
+    - St
+    - Stb
+    - Sth
+    - Sta
+    - Stba
+    - Stha
+    - Stf
+    - Stfsr
+    - Stc
+    - Stcsr
+- enabled-by: true
+  post-conditions:
+    Class: StoreDouble
+  pre-conditions:
+    Instruction:
+    - Std
+    - Stda
+    - Stdfq
+    - Stdf
+    - Stdcq
+    - Stdc
+- enabled-by: true
+  post-conditions:
+    Class: Atomic
+  pre-conditions:
+    Instruction:
+    - Ldstub
+    - Swap
+    - Ldstuba
+    - Swapa
+    - Casa
+- enabled-by: true
+  post-conditions:
+    Class: Load
+  pre-conditions:
+    Instruction:
+    - Ld
+    - Ldub
+    - Lduh
+    - Ldd
+    - Ldsb
+    - Ldsh
+    - Lda
+    - Lduba
+    - Lduha
+    - Ldda
+    - Ldsba
+    - Ldsha
+    - Ldf
+    - Ldfsr
+    - Lddf
+    - Ldc
+    - Ldcsr
+    - Lddc
+    - Undefined
+type: requirement

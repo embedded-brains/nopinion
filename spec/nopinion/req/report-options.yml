@@ -1,0 +1,186 @@
+SPDX-License-Identifier: CC-BY-SA-4.0 OR BSD-2-Clause
+copyrights:
+- Copyright (C) 2026 embedded brains GmbH & Co. KG
+enabled-by: true
+functional-type: action
+links:
+- role: requirement-refinement
+  uid: report
+post-conditions:
+- name: Report
+  states:
+  - name: Empty
+    test-code: |
+      T_eq_str( ctx->report, "" );
+    text: |
+      The errata checker shall report nothing.
+  - name: Line
+    test-code: |
+      T_eq_str( ctx->report, ctx->line );
+    text: |
+      The errata checker shall report the line of the ${../glossary/finding:/term}.
+  - name: Path
+    test-code: |
+      char expected[ 256 ];
+
+      (void)
+        snprintf( expected, sizeof( expected ), "%s%s", ctx->line, ctx->path );
+      T_eq_str( ctx->report, expected );
+    text: |
+      The errata checker shall report the line of the ${../glossary/finding:/term}
+      followed by one line for each instruction of the instruction sequence.
+  test-epilogue: null
+  test-prologue: null
+pre-conditions:
+- name: Quiet
+  states:
+  - name: 'Yes'
+    test-code: |
+      ctx->quiet = true;
+    text: |
+      While the option -q is given.
+  - name: 'No'
+    test-code: |
+      ctx->quiet = false;
+    text: |
+      While the option -q is not given.
+  test-epilogue: null
+  test-prologue: null
+- name: Verbose
+  states:
+  - name: 'Yes'
+    test-code: |
+      ctx->verbose = true;
+    text: |
+      While the option -v is given.
+  - name: 'No'
+    test-code: |
+      ctx->verbose = false;
+    text: |
+      While the option -v is not given.
+  test-epilogue: null
+  test-prologue: null
+- name: Match
+  states:
+  - name: Definite
+    test-code: |
+      TxAppend( &ctx->image, TxSt() );
+      TxAppend( &ctx->image, TxAdd() );
+      TxAppend( &ctx->image, TxSt() );
+      TxAppend( &ctx->image, TxLd() );
+      ctx->line = "t.o: .text+0x0 <f+0x0>: TN-0009 back-to-back-store\n";
+      ctx->path = "  00000000  c2220000\n"
+                  "  00000004  82006001\n"
+                  "  00000008  c2220000\n";
+    text: |
+      While the ${../glossary/code-section:/term} holds one
+      ${../glossary/definite-finding:/term}.
+  - name: Possible
+    test-code: |
+      TxAppend( &ctx->image, TxSt() );
+      TxAppend( &ctx->image, TxAdd() );
+      ctx->line = "t.o: .text+0x0 <f+0x0>: TN-0009 back-to-back-store "
+                  "possible\n";
+      ctx->path = "  00000000  c2220000\n"
+                  "  00000004  82006001\n"
+                  "            ?\n";
+    text: |
+      While the ${../glossary/code-section:/term} holds one
+      ${../glossary/possible-finding:/term}.
+  test-epilogue: null
+  test-prologue: null
+rationale: |
+  Dimension Quiet covers the option -q, 2 states.
+
+  Dimension Verbose covers the option -v, 2 states.
+
+  Dimension Match covers the kinds of a ${../glossary/finding:/term}, 2 states.
+
+  A line of the instruction sequence holds the offset and the instruction word in
+  hexadecimal. An ${../glossary/unknown-instruction:/term} gives a question mark
+  and ends the lines. The option -q suppresses every line.
+references: []
+requirement-type: functional
+skip-reasons: {}
+test-action: |
+  TxSetQuietVerbose( ctx->quiet, ctx->verbose );
+  ctx->report = TxCheck( &ctx->image, NOTE_0009 );
+  TxSetQuietVerbose( false, false );
+test-brief: null
+test-cleanup: null
+test-context:
+- brief: |
+    This member contains the image of the ELF file to check.
+  description: null
+  member: |
+    TxImage image
+- brief: |
+    This member is true, if the option -q is given.
+  description: null
+  member: |
+    bool quiet
+- brief: |
+    This member is true, if the option -v is given.
+  description: null
+  member: |
+    bool verbose
+- brief: |
+    This member contains the expected line of the finding.
+  description: null
+  member: |
+    const char *line
+- brief: |
+    This member contains the expected lines of the instruction sequence.
+  description: null
+  member: |
+    const char *path
+- brief: |
+    This member references the report of the errata checker.
+  description: null
+  member: |
+    const char *report
+test-context-support: null
+test-description: null
+test-header: null
+test-includes:
+- stdio.h
+test-local-includes:
+- nopinion.h
+- tx-support.h
+test-prepare: |
+  TxImageInit( &ctx->image );
+test-setup: null
+test-stop: null
+test-support: null
+test-target: nopinion/tests/tc-report-options.c
+test-teardown: null
+text: |
+  ${.:text-template}
+transition-map:
+- enabled-by: true
+  post-conditions:
+    Report: Empty
+  pre-conditions:
+    Quiet:
+    - 'Yes'
+    Verbose: all
+    Match: all
+- enabled-by: true
+  post-conditions:
+    Report: Line
+  pre-conditions:
+    Quiet:
+    - 'No'
+    Verbose:
+    - 'No'
+    Match: all
+- enabled-by: true
+  post-conditions:
+    Report: Path
+  pre-conditions:
+    Quiet:
+    - 'No'
+    Verbose:
+    - 'Yes'
+    Match: all
+type: requirement

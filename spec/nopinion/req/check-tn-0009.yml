@@ -1,0 +1,303 @@
+SPDX-License-Identifier: CC-BY-SA-4.0 OR BSD-2-Clause
+copyrights:
+- Copyright (C) 2026 embedded brains GmbH & Co. KG
+enabled-by: true
+functional-type: action
+links:
+- role: requirement-refinement
+  uid: tn-0009
+post-conditions:
+- name: Finding
+  states:
+  - name: None
+    test-code: |
+      T_eq_int( TxCountAt( ctx->report, 0, "TN-0009" ), 0 );
+    text: |
+      The errata checker shall report no ${../glossary/finding:/term} of the stale
+      cache entry erratum for the first instruction.
+  - name: Definite
+    test-code: |
+      T_eq_int( TxCountAt( ctx->report, 0, "TN-0009" ), 1 );
+      T_false( TxIsPossibleAt( ctx->report, 0, "TN-0009" ) );
+    text: |
+      The errata checker shall report one ${../glossary/definite-finding:/term} of
+      the stale cache entry erratum for the first instruction.
+  - name: Possible
+    test-code: |
+      T_eq_int( TxCountAt( ctx->report, 0, "TN-0009" ), 1 );
+      T_true( TxIsPossibleAt( ctx->report, 0, "TN-0009" ) );
+    text: |
+      The errata checker shall report one ${../glossary/possible-finding:/term} of
+      the stale cache entry erratum for the first instruction.
+  test-epilogue: null
+  test-prologue: null
+pre-conditions:
+- name: First
+  states:
+  - name: StoreWord
+    test-code: |
+      TxAppend( &ctx->image, TxSt() );
+    text: |
+      While the first instruction of the ${../glossary/code-section:/term} is a store
+      of word size or less.
+  - name: StoreDouble
+    test-code: |
+      TxAppend( &ctx->image, TxStd() );
+    text: |
+      While the first instruction of the ${../glossary/code-section:/term} is a store
+      of double word size.
+  - name: Atomic
+    test-code: |
+      TxAppend( &ctx->image, TxSwap() );
+    text: |
+      While the first instruction of the ${../glossary/code-section:/term} is an
+      atomic load-store instruction.
+  - name: Load
+    test-code: |
+      TxAppend( &ctx->image, TxLd() );
+    text: |
+      While the first instruction of the ${../glossary/code-section:/term} is a load.
+  - name: Other
+    test-code: |
+      TxAppend( &ctx->image, TxAdd() );
+    text: |
+      While the first instruction of the ${../glossary/code-section:/term} is neither
+      a load, nor a store, nor an atomic load-store instruction.
+  test-epilogue: null
+  test-prologue: null
+- name: Second
+  states:
+  - name: StoreWord
+    test-code: |
+      TxAppend( &ctx->image, TxSt() );
+    text: |
+      While the second instruction of the ${../glossary/code-section:/term} is a
+      store of word size or less.
+  - name: StoreDouble
+    test-code: |
+      TxAppend( &ctx->image, TxStd() );
+    text: |
+      While the second instruction of the ${../glossary/code-section:/term} is a
+      store of double word size.
+  - name: Atomic
+    test-code: |
+      TxAppend( &ctx->image, TxSwap() );
+    text: |
+      While the second instruction of the ${../glossary/code-section:/term} is an
+      atomic load-store instruction.
+  - name: Load
+    test-code: |
+      TxAppend( &ctx->image, TxLd() );
+    text: |
+      While the second instruction of the ${../glossary/code-section:/term} is a
+      load.
+  - name: Other
+    test-code: |
+      TxAppend( &ctx->image, TxAdd() );
+    text: |
+      While the second instruction of the ${../glossary/code-section:/term} is
+      neither a load, nor a store, nor an atomic load-store instruction.
+  - name: Absent
+    test-code: |
+      /* The code section ends after the first instruction */
+    text: |
+      While the ${../glossary/code-section:/term} ends after the first instruction.
+  test-epilogue: null
+  test-prologue: null
+- name: Third
+  states:
+  - name: StoreWord
+    test-code: |
+      TxAppend( &ctx->image, TxSt() );
+    text: |
+      While the third instruction of the ${../glossary/code-section:/term} is a store
+      of word size or less.
+  - name: StoreDouble
+    test-code: |
+      TxAppend( &ctx->image, TxStd() );
+    text: |
+      While the third instruction of the ${../glossary/code-section:/term} is a store
+      of double word size.
+  - name: Atomic
+    test-code: |
+      TxAppend( &ctx->image, TxSwap() );
+    text: |
+      While the third instruction of the ${../glossary/code-section:/term} is an
+      atomic load-store instruction.
+  - name: Load
+    test-code: |
+      TxAppend( &ctx->image, TxLd() );
+    text: |
+      While the third instruction of the ${../glossary/code-section:/term} is a load.
+  - name: Other
+    test-code: |
+      TxAppend( &ctx->image, TxAdd() );
+    text: |
+      While the third instruction of the ${../glossary/code-section:/term} is neither
+      a load, nor a store, nor an atomic load-store instruction.
+  - name: Absent
+    test-code: |
+      /* The code section ends after the second instruction */
+    text: |
+      While the ${../glossary/code-section:/term} ends after the second instruction.
+  test-epilogue: null
+  test-prologue: null
+rationale: |
+  Dimension First covers the instructions of SPARC V8 which transfer no control,
+  5 states.
+
+  Dimension Second covers the instructions of SPARC V8 which transfer no control
+  and the end of the ${../glossary/code-section:/term}, 6 states.
+
+  Dimension Third covers the instructions of SPARC V8 which transfer no control
+  and the end of the ${../glossary/code-section:/term}, 6 states.
+
+  The arrangement of each dimension appends its instruction to the
+  ${../glossary/code-section:/term}, so the order of the dimensions is the order
+  of the instructions. The flow of execution through control transfers is a
+  matter of the flow requirements. This item keeps the instructions in their
+  order in the code section. The instruction after the end of the
+  ${../glossary/code-section:/term} is an
+  ${../glossary/unknown-instruction:/term}.
+
+  Section 2.2 of the technical note states that the store of an atomic
+  instruction is not affected. An atomic instruction is a load and a store, so it
+  is no instruction which is not a load or store either.
+references: []
+requirement-type: functional
+skip-reasons: {}
+test-action: |
+  ctx->report = TxCheck( &ctx->image, NOTE_0009 );
+test-brief: null
+test-cleanup: null
+test-context:
+- brief: |
+    This member contains the image of the ELF file to check.
+  description: null
+  member: |
+    TxImage image
+- brief: |
+    This member references the report of the errata checker.
+  description: null
+  member: |
+    const char *report
+test-context-support: null
+test-description: null
+test-header: null
+test-includes: []
+test-local-includes:
+- nopinion.h
+- tx-support.h
+test-prepare: |
+  TxImageInit( &ctx->image );
+test-setup: null
+test-stop: null
+test-support: null
+test-target: nopinion/tests/tc-check-tn-0009.c
+test-teardown: null
+text: |
+  ${.:text-template}
+transition-map:
+- enabled-by: true
+  post-conditions:
+    Finding: None
+  pre-conditions:
+    First:
+    - Atomic
+    - Load
+    - Other
+    Second:
+    - StoreWord
+    - StoreDouble
+    - Atomic
+    - Load
+    - Other
+    Third: all
+- enabled-by: true
+  post-conditions:
+    Finding: None
+  pre-conditions:
+    First:
+    - Atomic
+    - Load
+    - Other
+    Second:
+    - Absent
+    Third: N/A
+- enabled-by: true
+  post-conditions:
+    Finding: None
+  pre-conditions:
+    First:
+    - StoreWord
+    Second:
+    - StoreWord
+    - StoreDouble
+    - Atomic
+    - Load
+    Third: all
+- enabled-by: true
+  post-conditions:
+    Finding: Possible
+  pre-conditions:
+    First:
+    - StoreWord
+    - StoreDouble
+    Second:
+    - Absent
+    Third: N/A
+- enabled-by: true
+  post-conditions:
+    Finding: Definite
+  pre-conditions:
+    First:
+    - StoreWord
+    Second:
+    - Other
+    Third:
+    - StoreWord
+    - StoreDouble
+- enabled-by: true
+  post-conditions:
+    Finding: None
+  pre-conditions:
+    First:
+    - StoreWord
+    Second:
+    - Other
+    Third:
+    - Atomic
+    - Load
+    - Other
+- enabled-by: true
+  post-conditions:
+    Finding: Possible
+  pre-conditions:
+    First:
+    - StoreWord
+    Second:
+    - Other
+    Third:
+    - Absent
+- enabled-by: true
+  post-conditions:
+    Finding: Definite
+  pre-conditions:
+    First:
+    - StoreDouble
+    Second:
+    - StoreWord
+    - StoreDouble
+    Third: all
+- enabled-by: true
+  post-conditions:
+    Finding: None
+  pre-conditions:
+    First:
+    - StoreDouble
+    Second:
+    - Atomic
+    - Load
+    - Other
+    Third: all
+type: requirement

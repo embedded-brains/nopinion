@@ -1,0 +1,18 @@
+SPDX-License-Identifier: CC-BY-SA-4.0 OR BSD-2-Clause
+copyrights:
+- Copyright (C) 2026 embedded brains GmbH & Co. KG
+enabled-by: true
+functional-type: function
+links:
+- role: requirement-refinement
+  uid: group
+- location: appendix B and appendix F
+  role: reference
+  uid: /ref/arch/sparc/v8
+rationale: null
+references: []
+requirement-type: functional
+text: |
+  The errata checker shall classify each instruction of a
+  ${../glossary/code-section:/term} by the instruction formats of SPARC V8.
+type: requirement

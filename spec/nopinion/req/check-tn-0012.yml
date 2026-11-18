@@ -1,0 +1,409 @@
+SPDX-License-Identifier: CC-BY-SA-4.0 OR BSD-2-Clause
+copyrights:
+- Copyright (C) 2026 embedded brains GmbH & Co. KG
+enabled-by: true
+functional-type: action
+links:
+- role: requirement-refinement
+  uid: tn-0012
+post-conditions:
+- name: Finding
+  states:
+  - name: None
+    test-code: |
+      T_eq_int( TxCountAt( ctx->report, 8, "TN-0012" ), 0 );
+    text: |
+      The errata checker shall report no ${../glossary/finding:/term} of the
+      incorrect annulation erratum for the first instruction.
+  - name: Definite
+    test-code: |
+      T_eq_int( TxCountAt( ctx->report, 8, "TN-0012" ), 1 );
+      T_false( TxIsPossibleAt( ctx->report, 8, "TN-0012" ) );
+    text: |
+      The errata checker shall report one ${../glossary/definite-finding:/term} of
+      the incorrect annulation erratum for the first instruction.
+  - name: Possible
+    test-code: |
+      T_eq_int( TxCountAt( ctx->report, 8, "TN-0012" ), 1 );
+      T_true( TxIsPossibleAt( ctx->report, 8, "TN-0012" ) );
+    text: |
+      The errata checker shall report one ${../glossary/possible-finding:/term} of
+      the incorrect annulation erratum for the first instruction.
+  test-epilogue: null
+  test-prologue: null
+pre-conditions:
+- name: First
+  states:
+  - name: SetsIcc
+    test-code: |
+      ctx->first = TxSubcc();
+    text: |
+      While the first instruction modifies the integer condition codes.
+  - name: Other
+    test-code: |
+      ctx->first = TxSt();
+    text: |
+      While the first instruction neither modifies the integer condition codes nor
+      transfers control.
+  test-epilogue: null
+  test-prologue: null
+- name: Branch
+  states:
+  - name: IccAnnul
+    test-code: |
+      ctx->branch = TxBicc( 1, true, -3 );
+    text: |
+      While the second instruction is a branch on integer condition codes which
+      depends on the condition codes and has the annul bit set.
+  - name: Icc
+    test-code: |
+      ctx->branch = TxBicc( 1, false, -3 );
+    text: |
+      While the second instruction is a branch on integer condition codes which
+      depends on the condition codes and has the annul bit cleared.
+  - name: Unconditional
+    test-code: |
+      ctx->branch = TxBicc( 8, false, -3 );
+    text: |
+      While the second instruction is a branch on integer condition codes which does
+      not depend on the condition codes.
+  - name: Other
+    test-code: |
+      ctx->branch = TxAdd();
+    text: |
+      While the second instruction transfers no control.
+  - name: Absent
+    test-code: |
+      ctx->branch_absent = true;
+    text: |
+      While the ${../glossary/code-section:/term} ends after the first instruction.
+  test-epilogue: null
+  test-prologue: null
+- name: Slot
+  states:
+  - name: FPop1
+    test-code: |
+      ctx->slot = TxFadds();
+    text: |
+      While the third instruction is an FPop1 instruction.
+  - name: FPop2
+    test-code: |
+      ctx->slot = TxFcmps();
+    text: |
+      While the third instruction is an FPop2 instruction.
+  - name: FBfcc
+    test-code: |
+      ctx->slot = TxFbfcc( false, 0 );
+    text: |
+      While the third instruction is a branch on floating-point condition codes.
+  - name: FLoad
+    test-code: |
+      ctx->slot = TxLdf();
+    text: |
+      While the third instruction is a load of a floating-point register.
+  - name: Other
+    test-code: |
+      ctx->slot = TxAdd();
+    text: |
+      While the third instruction is no floating-point instruction and transfers no
+      control.
+  - name: Absent
+    test-code: |
+      ctx->slot_absent = true;
+    text: |
+      While the ${../glossary/code-section:/term} ends after the second instruction.
+  test-epilogue: null
+  test-prologue: null
+- name: Target
+  states:
+  - name: FPop1
+    test-code: |
+      ctx->target = TxFadds();
+    text: |
+      While the target of the branch is an FPop1 instruction.
+  - name: FPop2
+    test-code: |
+      ctx->target = TxFcmps();
+    text: |
+      While the target of the branch is an FPop2 instruction.
+  - name: FBfcc
+    test-code: |
+      ctx->target = TxFbfcc( false, 0 );
+    text: |
+      While the target of the branch is a branch on floating-point condition codes.
+  - name: FLoad
+    test-code: |
+      ctx->target = TxLdf();
+    text: |
+      While the target of the branch is a load of a floating-point register.
+  - name: Other
+    test-code: |
+      ctx->target = TxAdd();
+    text: |
+      While the target of the branch is no floating-point instruction and transfers
+      no control.
+  - name: Unknown
+    test-code: |
+      ctx->target = TxAdd();
+      ctx->relocated = true;
+    text: |
+      While the target of the branch is an ${../glossary/unknown-instruction:/term}.
+  test-epilogue: null
+  test-prologue: null
+rationale: |
+  Dimension First covers the instructions of SPARC V8 which transfer no control,
+  2 states.
+
+  Dimension Branch covers the branches on integer condition codes, the other
+  instructions and the end of the ${../glossary/code-section:/term}, 5 states.
+
+  Dimension Slot covers the floating-point instructions, the other
+  instructions and the end of the ${../glossary/code-section:/term}, 6 states.
+
+  Dimension Target covers the floating-point instructions, the other
+  instructions and an ${../glossary/unknown-instruction:/term}, 6 states.
+
+  The test places the target of the branch at offset 0, a NOP at offset 4, and
+  the first instruction at offset 8. A relocation of the branch makes its target
+  an ${../glossary/unknown-instruction:/term}.
+
+  Section 2.3 of the technical note allows any instruction in the delay slot of
+  sequence B. A known target therefore decides sequence B, also if the
+  ${../glossary/code-section:/term} ends after the branch. FAQ 4.1 states that
+  floating-point loads do not trigger the erratum.
+references: []
+requirement-type: functional
+skip-reasons: {}
+test-action: |
+  TxAppend( &ctx->image, ctx->target );
+  TxAppend( &ctx->image, TxNop() );
+  TxAppend( &ctx->image, ctx->first );
+
+  if ( !ctx->branch_absent ) {
+    TxAppend( &ctx->image, ctx->branch );
+
+    if ( ctx->relocated ) {
+      TxAddRelocation( &ctx->image, 3 );
+    }
+
+    if ( !ctx->slot_absent ) {
+      TxAppend( &ctx->image, ctx->slot );
+    }
+  }
+
+  ctx->report = TxCheck( &ctx->image, NOTE_0012 );
+test-brief: null
+test-cleanup: null
+test-context:
+- brief: |
+    This member contains the image of the ELF file to check.
+  description: null
+  member: |
+    TxImage image
+- brief: |
+    This member contains the first instruction.
+  description: null
+  member: |
+    uint32_t first
+- brief: |
+    This member contains the second instruction.
+  description: null
+  member: |
+    uint32_t branch
+- brief: |
+    This member contains the third instruction.
+  description: null
+  member: |
+    uint32_t slot
+- brief: |
+    This member contains the instruction at the target of the branch.
+  description: null
+  member: |
+    uint32_t target
+- brief: |
+    This member is true, if the code section ends after the first instruction.
+  description: null
+  member: |
+    bool branch_absent
+- brief: |
+    This member is true, if the code section ends after the second instruction.
+  description: null
+  member: |
+    bool slot_absent
+- brief: |
+    This member is true, if a relocation applies to the branch.
+  description: null
+  member: |
+    bool relocated
+- brief: |
+    This member references the report of the errata checker.
+  description: null
+  member: |
+    const char *report
+test-context-support: null
+test-description: null
+test-header: null
+test-includes: []
+test-local-includes:
+- nopinion.h
+- tx-support.h
+test-prepare: |
+  TxImageInit( &ctx->image );
+  ctx->target = TxNop();
+  ctx->slot = TxNop();
+  ctx->branch_absent = false;
+  ctx->slot_absent = false;
+  ctx->relocated = false;
+test-setup: null
+test-stop: null
+test-support: null
+test-target: nopinion/tests/tc-check-tn-0012.c
+test-teardown: null
+text: |
+  ${.:text-template}
+transition-map:
+- enabled-by: true
+  post-conditions:
+    Finding: None
+  pre-conditions:
+    First:
+    - Other
+    Branch: all
+    Slot: N/A
+    Target: N/A
+- enabled-by: true
+  post-conditions:
+    Finding: Possible
+  pre-conditions:
+    First:
+    - SetsIcc
+    Branch:
+    - Absent
+    Slot: N/A
+    Target: N/A
+- enabled-by: true
+  post-conditions:
+    Finding: None
+  pre-conditions:
+    First:
+    - SetsIcc
+    Branch:
+    - Unconditional
+    - Other
+    Slot: all
+    Target: all
+- enabled-by: true
+  post-conditions:
+    Finding: Definite
+  pre-conditions:
+    First:
+    - SetsIcc
+    Branch:
+    - IccAnnul
+    Slot:
+    - FPop1
+    - FPop2
+    - FBfcc
+    Target: all
+- enabled-by: true
+  post-conditions:
+    Finding: Definite
+  pre-conditions:
+    First:
+    - SetsIcc
+    Branch:
+    - IccAnnul
+    - Icc
+    Slot:
+    - FLoad
+    - Other
+    - Absent
+    Target:
+    - FPop1
+    - FPop2
+    - FBfcc
+- enabled-by: true
+  post-conditions:
+    Finding: Definite
+  pre-conditions:
+    First:
+    - SetsIcc
+    Branch:
+    - Icc
+    Slot:
+    - FPop1
+    - FPop2
+    - FBfcc
+    Target:
+    - FPop1
+    - FPop2
+    - FBfcc
+- enabled-by: true
+  post-conditions:
+    Finding: Possible
+  pre-conditions:
+    First:
+    - SetsIcc
+    Branch:
+    - IccAnnul
+    - Icc
+    Slot:
+    - FLoad
+    - Other
+    - Absent
+    Target:
+    - Unknown
+- enabled-by: true
+  post-conditions:
+    Finding: Possible
+  pre-conditions:
+    First:
+    - SetsIcc
+    Branch:
+    - Icc
+    Slot:
+    - FPop1
+    - FPop2
+    - FBfcc
+    Target:
+    - Unknown
+- enabled-by: true
+  post-conditions:
+    Finding: Possible
+  pre-conditions:
+    First:
+    - SetsIcc
+    Branch:
+    - IccAnnul
+    Slot:
+    - Absent
+    Target:
+    - FLoad
+    - Other
+- enabled-by: true
+  post-conditions:
+    Finding: None
+  pre-conditions:
+    First:
+    - SetsIcc
+    Branch:
+    - IccAnnul
+    Slot:
+    - FLoad
+    - Other
+    Target:
+    - FLoad
+    - Other
+- enabled-by: true
+  post-conditions:
+    Finding: None
+  pre-conditions:
+    First:
+    - SetsIcc
+    Branch:
+    - Icc
+    Slot: all
+    Target:
+    - FLoad
+    - Other
+type: requirement

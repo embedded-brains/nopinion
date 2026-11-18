@@ -1,0 +1,246 @@
+SPDX-License-Identifier: CC-BY-SA-4.0 OR BSD-2-Clause
+copyrights:
+- Copyright (C) 2026 embedded brains GmbH & Co. KG
+enabled-by: true
+functional-type: action
+links:
+- role: requirement-refinement
+  uid: input
+post-conditions:
+- name: Error
+  states:
+  - name: None
+    test-code: |
+      T_eq_str( TxErrors(), "" );
+    text: |
+      The errata checker shall report no error.
+  - name: Message
+    test-code: |
+      char expected[ 128 ];
+
+      (void) snprintf(
+        expected,
+        sizeof( expected ),
+        "nopinion: %s: %s\n",
+        ctx->path,
+        ctx->message
+      );
+      T_eq_str( TxErrors(), expected );
+    text: |
+      The errata checker shall report the error message of the file for the file.
+  test-epilogue: null
+  test-prologue: null
+- name: Checked
+  states:
+  - name: 'Yes'
+    test-code: |
+      T_not_null( strstr( ctx->report, ": TN-0009 back-to-back-store\n" ) );
+    text: |
+      The errata checker shall check the ${../glossary/code-section:/term} of the
+      file.
+  - name: 'No'
+    test-code: |
+      T_eq_str( ctx->report, "" );
+    text: |
+      The errata checker shall check no ${../glossary/code-section:/term}.
+  test-epilogue: null
+  test-prologue: null
+pre-conditions:
+- name: File
+  states:
+  - name: Elf
+    test-code: |
+      ctx->size = TxBuildElf( &ctx->image, ctx->buf, sizeof( ctx->buf ) );
+    text: |
+      While the file is a valid ELF file.
+  - name: Archive
+    test-code: |
+      TxArchive *ar = &ctx->archive;
+      size_t     size = TxBuildElf( &ctx->image, ctx->buf, sizeof( ctx->buf ) );
+
+      TxArchiveInit( ar );
+      TxArchiveAdd( ar, "a.o/", ctx->buf, size, 0 );
+      memcpy( ctx->buf, ar->buf, ar->size );
+      ctx->size = ar->size;
+    text: |
+      While the file is an archive with a valid ELF file.
+  - name: Thin
+    test-code: |
+      memcpy( ctx->buf, "!<thin>\n", 8 );
+      ctx->size = 8;
+      ctx->message = "thin archives are not supported";
+    text: |
+      While the file is a thin archive.
+  - name: Short
+    test-code: |
+      memcpy( ctx->buf, "\177ELF", 4 );
+      ctx->size = 4;
+      ctx->message = "not an ELF file";
+    text: |
+      While the file is shorter than the magic string of an archive.
+  - name: Empty
+    test-code: |
+      ctx->size = 0;
+      ctx->message = "empty file";
+    text: |
+      While the file is empty.
+  - name: Missing
+    test-code: |
+      ctx->missing = true;
+      ctx->message = "No such file or directory";
+    text: |
+      While the file does not exist.
+  - name: NoStatus
+    test-code: |
+      ctx->size = TxBuildElf( &ctx->image, ctx->buf, sizeof( ctx->buf ) );
+      ctx->fail = TX_FAIL_FSTAT;
+      ctx->message = "Cannot allocate memory";
+    text: |
+      While the file is a valid ELF file, while the query of its status fails.
+  - name: NoMapping
+    test-code: |
+      ctx->size = TxBuildElf( &ctx->image, ctx->buf, sizeof( ctx->buf ) );
+      ctx->fail = TX_FAIL_MMAP;
+      ctx->message = "Cannot allocate memory";
+    text: |
+      While the file is a valid ELF file, while the mapping of its content fails.
+  test-epilogue: null
+  test-prologue: null
+rationale: |
+  Dimension File covers the files which the errata checker opens, 8 states.
+
+  The errata checker maps the content of a file into memory. The content is an
+  archive, if it starts with the magic string of an archive, and an ELF file
+  otherwise. The error message of a failed system call is the text of its error
+  number. A link time wrapper lets the query of the file status or the mapping
+  fail with the error number ENOMEM.
+
+  The test writes the file t.o into a temporary directory of the current
+  directory. The ELF file holds a store, an ADD and a store.
+references: []
+requirement-type: functional
+skip-reasons: {}
+test-action: |
+  if ( !ctx->missing ) {
+    FILE *f = fopen( ctx->path, "wb" );
+
+    T_assert_not_null( f );
+    T_assert_eq_sz( fwrite( ctx->buf, 1, ctx->size, f ), ctx->size );
+    T_assert_eq_int( fclose( f ), 0 );
+  }
+
+  TxFailNext( ctx->fail );
+  ctx->report = TxCheckFile( ctx->path, NOTE_0009 );
+  TxFailNext( 0 );
+  (void) unlink( ctx->path );
+test-brief: null
+test-cleanup: null
+test-context:
+- brief: |
+    This member contains the image of the ELF file.
+  description: null
+  member: |
+    TxImage image
+- brief: |
+    This member contains the archive.
+  description: null
+  member: |
+    TxArchive archive
+- brief: |
+    This member contains the content of the file.
+  description: null
+  member: |
+    uint8_t buf[ 8192 ]
+- brief: |
+    This member contains the size of the file.
+  description: null
+  member: |
+    size_t size
+- brief: |
+    This member is true, if the file does not exist.
+  description: null
+  member: |
+    bool missing
+- brief: |
+    This member specifies the functions which shall fail.
+  description: null
+  member: |
+    unsigned int fail
+- brief: |
+    This member contains the expected error message.
+  description: null
+  member: |
+    const char *message
+- brief: |
+    This member contains the temporary directory.
+  description: null
+  member: |
+    char dir[ 32 ]
+- brief: |
+    This member contains the path of the file.
+  description: null
+  member: |
+    char path[ 64 ]
+- brief: |
+    This member references the report of the errata checker.
+  description: null
+  member: |
+    const char *report
+test-context-support: null
+test-description: null
+test-header: null
+test-includes:
+- stdio.h
+- stdlib.h
+- string.h
+- unistd.h
+test-local-includes:
+- nopinion.h
+- tx-support.h
+test-prepare: |
+  TxImageInit( &ctx->image );
+  TxAppend( &ctx->image, TxSt() );
+  TxAppend( &ctx->image, TxAdd() );
+  TxAppend( &ctx->image, TxSt() );
+  ctx->missing = false;
+  ctx->fail = 0;
+  ctx->message = "";
+test-setup:
+  brief: null
+  code: |
+    strcpy( ctx->dir, "tx-file-XXXXXX" );
+    T_assert_not_null( mkdtemp( ctx->dir ) );
+    (void) snprintf( ctx->path, sizeof( ctx->path ), "%s/t.o", ctx->dir );
+  description: null
+test-stop: null
+test-support: null
+test-target: nopinion/tests/tc-input-file.c
+test-teardown:
+  brief: null
+  code: |
+    T_eq_int( rmdir( ctx->dir ), 0 );
+  description: null
+text: |
+  ${.:text-template}
+transition-map:
+- enabled-by: true
+  post-conditions:
+    Error: None
+    Checked: 'Yes'
+  pre-conditions:
+    File:
+    - Elf
+    - Archive
+- enabled-by: true
+  post-conditions:
+    Error: Message
+    Checked: 'No'
+  pre-conditions:
+    File:
+    - Thin
+    - Short
+    - Empty
+    - Missing
+    - NoStatus
+    - NoMapping
+type: requirement

@@ -1,0 +1,788 @@
+SPDX-License-Identifier: CC-BY-SA-4.0 OR BSD-2-Clause
+copyrights:
+- Copyright (C) 2026 embedded brains GmbH & Co. KG
+enabled-by: true
+functional-type: action
+links:
+- role: requirement-refinement
+  uid: cli-part
+- role: requirement-refinement
+  uid: cli
+post-conditions:
+- name: Status
+  states:
+  - name: Success
+    test-code: |
+      T_eq_int( ctx->status, 0 );
+      T_eq_str( ctx->out, "" );
+    text: |
+      The exit status shall be 0.
+  - name: Finding
+    test-code: |
+      T_eq_int( ctx->status, 1 );
+      T_ne_str( ctx->out, "" );
+    text: |
+      The exit status shall be 1.
+  - name: Error
+    test-code: |
+      T_eq_int( ctx->status, 2 );
+      T_eq_int( strncmp( TxErrors(), "usage: nopinion ", 16 ), 0 );
+    text: |
+      The errata checker shall write the usage text to the standard error and exit
+      with the status 2.
+  test-epilogue: null
+  test-prologue: null
+pre-conditions:
+- name: Part
+  states:
+  - name: None
+    test-code: |
+      ctx->part = NULL;
+    text: |
+      While the option -p is not given.
+  - name: Gr712rc
+    test-code: |
+      ctx->part = "gr712rc";
+    text: |
+      While the option -p names the GR712RC.
+  - name: Gr740
+    test-code: |
+      ctx->part = "gr740";
+    text: |
+      While the option -p names the GR740.
+  - name: Leon3ftRtax
+    test-code: |
+      ctx->part = "leon3ft-rtax";
+    text: |
+      While the option -p names the LEON3FT-RTAX.
+  - name: Ut699
+    test-code: |
+      ctx->part = "ut699";
+    text: |
+      While the option -p names the UT699.
+  - name: Ut699e
+    test-code: |
+      ctx->part = "ut699e";
+    text: |
+      While the option -p names the UT699E.
+  - name: Ut700
+    test-code: |
+      ctx->part = "ut700";
+    text: |
+      While the option -p names the UT700.
+  - name: Unknown
+    test-code: |
+      ctx->part = "leon3";
+    text: |
+      While the option -p names an unknown part.
+  test-epilogue: null
+  test-prologue: null
+- name: Errata
+  states:
+  - name: None
+    test-code: |
+      ctx->errata = NULL;
+    text: |
+      While the option -t is not given.
+  - name: Tn0009
+    test-code: |
+      ctx->errata = "0009";
+    text: |
+      While the option -t selects GRLIB-TN-0009.
+  - name: Tn0011
+    test-code: |
+      ctx->errata = "0011";
+    text: |
+      While the option -t selects GRLIB-TN-0011.
+  - name: Tn0012
+    test-code: |
+      ctx->errata = "0012";
+    text: |
+      While the option -t selects GRLIB-TN-0012.
+  - name: Tn0013
+    test-code: |
+      ctx->errata = "0013";
+    text: |
+      While the option -t selects GRLIB-TN-0013.
+  - name: Tn0016
+    test-code: |
+      ctx->errata = "0016";
+    text: |
+      While the option -t selects GRLIB-TN-0016.
+  - name: Tn0018
+    test-code: |
+      ctx->errata = "0018";
+    text: |
+      While the option -t selects GRLIB-TN-0018.
+  - name: Gr712rc8
+    test-code: |
+      ctx->errata = "gr712rc-8";
+    text: |
+      While the option -t selects GR712RC erratum 8.
+  - name: Gr712rc19
+    test-code: |
+      ctx->errata = "gr712rc-19";
+    text: |
+      While the option -t selects GR712RC erratum 19.
+  - name: Gr740201
+    test-code: |
+      ctx->errata = "gr740-20-1";
+    text: |
+      While the option -t selects GR740 erratum 20-1.
+  test-epilogue: null
+  test-prologue: null
+- name: Check
+  states:
+  - name: Tn0009
+    test-code: |
+      ctx->file = 0;
+    text: |
+      While the file operand names an ELF file with one
+      ${../glossary/definite-finding:/term} of GRLIB-TN-0009.
+  - name: Tn0011
+    test-code: |
+      ctx->file = 1;
+    text: |
+      While the file operand names an ELF file with one
+      ${../glossary/definite-finding:/term} of GRLIB-TN-0011.
+  - name: Tn0012
+    test-code: |
+      ctx->file = 2;
+    text: |
+      While the file operand names an ELF file with one
+      ${../glossary/definite-finding:/term} of GRLIB-TN-0012.
+  - name: Tn0013
+    test-code: |
+      ctx->file = 3;
+    text: |
+      While the file operand names an ELF file with one
+      ${../glossary/definite-finding:/term} of GRLIB-TN-0013.
+  - name: Tn0016
+    test-code: |
+      ctx->file = 4;
+    text: |
+      While the file operand names an ELF file with one
+      ${../glossary/definite-finding:/term} of GRLIB-TN-0016.
+  - name: Tn0018
+    test-code: |
+      ctx->file = 5;
+    text: |
+      While the file operand names an ELF file with one
+      ${../glossary/definite-finding:/term} of GRLIB-TN-0018.
+  - name: Asi
+    test-code: |
+      ctx->file = 6;
+    text: |
+      While the file operand names an ELF file with one
+      ${../glossary/definite-finding:/term} of GR712RC erratum 19 and GR740 erratum 20-1.
+  - name: PowerDown
+    test-code: |
+      ctx->file = 7;
+    text: |
+      While the file operand names an ELF file with one
+      ${../glossary/definite-finding:/term} of GR712RC erratum 8.
+  test-epilogue: null
+  test-prologue: null
+rationale: |
+  Dimension Part covers each part of the option -p, no option -p and an unknown
+  part, 8 states.
+
+  Dimension Errata covers each erratum name of the option -t and no option -t, 10
+  states. The command line requirements cover the list form of the option -t and
+  its errors.
+
+  Dimension Check covers the checks of the errata checker, 8 states.
+
+  The errata checker checks the errata which both the option -t and the option
+  -p select. The option -p selects the errata of the table of
+  ${cli-part:/name}. GR712RC erratum 19 and GR740 erratum 20-1 describe the same
+  behaviour, so both names select one check. A selection without an erratum is
+  an error.
+
+  The test writes one file per check into a temporary directory of the current
+  directory. Each file gives one ${../glossary/definite-finding:/term} of its
+  check and no ${../glossary/finding:/term} of another check.
+references: []
+requirement-type: functional
+skip-reasons: {}
+test-action: |
+  char *argv[ 7 ];
+  int   argc = 0;
+
+  argv[ argc++ ] = "nopinion";
+
+  if ( ctx->part != NULL ) {
+    argv[ argc++ ] = "-p";
+    argv[ argc++ ] = (char *) ctx->part;
+  }
+
+  if ( ctx->errata != NULL ) {
+    argv[ argc++ ] = "-t";
+    argv[ argc++ ] = (char *) ctx->errata;
+  }
+
+  argv[ argc++ ] = ctx->files[ ctx->file ];
+  argv[ argc ] = NULL;
+  ctx->out = TxMain( argc, argv, &ctx->status );
+test-brief: null
+test-cleanup: null
+test-context:
+- brief: |
+    This member contains the argument of the option -p.
+  description: null
+  member: |
+    const char *part
+- brief: |
+    This member contains the argument of the option -t.
+  description: null
+  member: |
+    const char *errata
+- brief: |
+    This member contains the index of the file operand.
+  description: null
+  member: |
+    size_t file
+- brief: |
+    This member contains the temporary directory.
+  description: null
+  member: |
+    char dir[ 32 ]
+- brief: |
+    This member contains the paths of the files.
+  description: null
+  member: |
+    char files[ 8 ][ 64 ]
+- brief: |
+    This member contains the exit status.
+  description: null
+  member: |
+    int status
+- brief: |
+    This member references the standard output.
+  description: null
+  member: |
+    const char *out
+test-context-support: null
+test-description: null
+test-header: null
+test-includes:
+- stdio.h
+- stdlib.h
+- string.h
+- unistd.h
+test-local-includes:
+- nopinion.h
+- tx-support.h
+test-prepare: null
+test-setup:
+  brief: null
+  code: |
+    TxImage image;
+    size_t  i;
+
+    strcpy( ctx->dir, "tx-select-XXXXXX" );
+    T_assert_not_null( mkdtemp( ctx->dir ) );
+
+    for ( i = 0; i < T_ARRAY_SIZE( ctx->files ); ++i ) {
+      (void) snprintf(
+        ctx->files[ i ],
+        sizeof( ctx->files[ i ] ),
+        "%s/%zu.o",
+        ctx->dir,
+        i
+      );
+    }
+
+    TxImageInit( &image );
+    TxAppend( &image, TxSt() );
+    TxAppend( &image, TxAdd() );
+    TxAppend( &image, TxSt() );
+    TxAppend( &image, TxNop() );
+    TxAppend( &image, TxNop() );
+    TxWriteElf( ctx->files[ 0 ], &image );
+
+    TxImageInit( &image );
+    image.alignment = 16;
+    TxAppend( &image, TxNop() );
+    TxAppend( &image, TxSwap() );
+    TxAppend( &image, TxNop() );
+    TxWriteElf( ctx->files[ 1 ], &image );
+
+    TxImageInit( &image );
+    TxAppend( &image, TxSubcc() );
+    TxAppend( &image, TxBicc( 9, true, 2 ) );
+    TxAppend( &image, TxFadds() );
+    TxAppend( &image, TxNop() );
+    TxAppend( &image, TxNop() );
+    TxWriteElf( ctx->files[ 2 ], &image );
+
+    TxImageInit( &image );
+    TxAppend( &image, TxFpop1( TX_FDIVS, 3, 1, 2 ) );
+    TxAppend( &image, TxFpop1( TX_FADDS, 5, 6, 7 ) );
+    TxAppend( &image, TxFpop1( TX_FADDS, 8, 6, 7 ) );
+    TxAppend( &image, TxFpop1( TX_FDIVS, 9, 6, 7 ) );
+    TxAppend( &image, TxNop() );
+    TxAppend( &image, TxNop() );
+    TxAppend( &image, TxNop() );
+    TxWriteElf( ctx->files[ 3 ], &image );
+
+    TxImageInit( &image );
+    TxAppend( &image, TxFadds() );
+    TxAppend( &image, TxStfsr() );
+    TxAppend( &image, TxNop() );
+    TxAppend( &image, TxNop() );
+    TxAppend( &image, TxNop() );
+    TxWriteElf( ctx->files[ 4 ], &image );
+
+    TxImageInit( &image );
+    TxAppend( &image, TxTicc( 8 ) );
+    TxAppend( &image, TxJmpl() );
+    TxAppend( &image, TxNop() );
+    TxWriteElf( ctx->files[ 5 ], &image );
+
+    TxImageInit( &image );
+    TxAppend( &image, TxFormat3Asi( 3, 0x14, TX_G1, TX_O0, 0x1c, TX_G0 ) );
+    TxAppend( &image, TxLd() );
+    TxAppend( &image, TxNop() );
+    TxWriteElf( ctx->files[ 6 ], &image );
+
+    TxImageInit( &image );
+    TxAppend( &image, TxWrasr( 19 ) );
+    TxAppend( &image, TxNop() );
+    TxWriteElf( ctx->files[ 7 ], &image );
+  description: null
+test-stop: null
+test-support: null
+test-target: nopinion/tests/tc-cli-select.c
+test-teardown:
+  brief: null
+  code: |
+    size_t i;
+
+    for ( i = 0; i < T_ARRAY_SIZE( ctx->files ); ++i ) {
+      T_eq_int( unlink( ctx->files[ i ] ), 0 );
+    }
+
+    T_eq_int( rmdir( ctx->dir ), 0 );
+  description: null
+text: |
+  ${.:text-template}
+transition-map:
+- enabled-by: true
+  post-conditions:
+    Status: Error
+  pre-conditions:
+    Part:
+    - Gr740
+    - Leon3ftRtax
+    - Unknown
+    Errata:
+    - Tn0013
+    Check: all
+- enabled-by: true
+  post-conditions:
+    Status: Error
+  pre-conditions:
+    Part:
+    - Gr740
+    - Unknown
+    Errata:
+    - Tn0009
+    - Tn0011
+    - Tn0018
+    Check: all
+- enabled-by: true
+  post-conditions:
+    Status: Error
+  pre-conditions:
+    Part:
+    - Leon3ftRtax
+    - Unknown
+    Errata:
+    - Tn0016
+    Check: all
+- enabled-by: true
+  post-conditions:
+    Status: Error
+  pre-conditions:
+    Part:
+    - Unknown
+    Errata:
+    - None
+    Check: all
+- enabled-by: true
+  post-conditions:
+    Status: Error
+  pre-conditions:
+    Part:
+    - Gr740
+    - Leon3ftRtax
+    - Ut699
+    - Ut699e
+    - Ut700
+    - Unknown
+    Errata:
+    - Tn0012
+    - Gr712rc8
+    Check: all
+- enabled-by: true
+  post-conditions:
+    Status: Error
+  pre-conditions:
+    Part:
+    - Leon3ftRtax
+    - Ut699
+    - Ut699e
+    - Ut700
+    - Unknown
+    Errata:
+    - Gr712rc19
+    - Gr740201
+    Check: all
+- enabled-by: true
+  post-conditions:
+    Status: Finding
+  pre-conditions:
+    Part:
+    - None
+    - Gr712rc
+    - Gr740
+    Errata:
+    - None
+    - Gr712rc19
+    - Gr740201
+    Check:
+    - Asi
+- enabled-by: true
+  post-conditions:
+    Status: Finding
+  pre-conditions:
+    Part:
+    - None
+    - Gr712rc
+    Errata:
+    - None
+    - Gr712rc8
+    Check:
+    - PowerDown
+- enabled-by: true
+  post-conditions:
+    Status: Finding
+  pre-conditions:
+    Part:
+    - None
+    - Gr712rc
+    Errata:
+    - None
+    - Tn0012
+    Check:
+    - Tn0012
+- enabled-by: true
+  post-conditions:
+    Status: Finding
+  pre-conditions:
+    Part:
+    - None
+    - Gr712rc
+    - Gr740
+    - Ut699
+    - Ut699e
+    - Ut700
+    Errata:
+    - None
+    - Tn0016
+    Check:
+    - Tn0016
+- enabled-by: true
+  post-conditions:
+    Status: Finding
+  pre-conditions:
+    Part:
+    - None
+    - Gr712rc
+    - Ut699
+    - Ut699e
+    - Ut700
+    Errata:
+    - None
+    - Tn0013
+    Check:
+    - Tn0013
+- enabled-by: true
+  post-conditions:
+    Status: Finding
+  pre-conditions:
+    Part:
+    - None
+    - Gr712rc
+    - Leon3ftRtax
+    - Ut699
+    - Ut699e
+    - Ut700
+    Errata:
+    - None
+    - Tn0009
+    Check:
+    - Tn0009
+- enabled-by: true
+  post-conditions:
+    Status: Finding
+  pre-conditions:
+    Part:
+    - None
+    - Gr712rc
+    - Leon3ftRtax
+    - Ut699
+    - Ut699e
+    - Ut700
+    Errata:
+    - None
+    - Tn0011
+    Check:
+    - Tn0011
+- enabled-by: true
+  post-conditions:
+    Status: Finding
+  pre-conditions:
+    Part:
+    - None
+    - Gr712rc
+    - Leon3ftRtax
+    - Ut699
+    - Ut699e
+    - Ut700
+    Errata:
+    - None
+    - Tn0018
+    Check:
+    - Tn0018
+- enabled-by: true
+  post-conditions:
+    Status: Success
+  pre-conditions:
+    Part:
+    - None
+    - Gr712rc
+    - Gr740
+    Errata:
+    - Gr712rc19
+    - Gr740201
+    Check:
+    - Tn0009
+    - Tn0011
+    - Tn0012
+    - Tn0013
+    - Tn0016
+    - Tn0018
+    - PowerDown
+- enabled-by: true
+  post-conditions:
+    Status: Success
+  pre-conditions:
+    Part:
+    - None
+    - Gr712rc
+    Errata:
+    - Tn0012
+    - Gr712rc8
+    Check:
+    - Tn0009
+    - Tn0011
+    - Tn0013
+    - Tn0016
+    - Tn0018
+    - Asi
+- enabled-by: true
+  post-conditions:
+    Status: Success
+  pre-conditions:
+    Part:
+    - None
+    - Gr712rc
+    Errata:
+    - Gr712rc8
+    Check:
+    - Tn0012
+- enabled-by: true
+  post-conditions:
+    Status: Success
+  pre-conditions:
+    Part:
+    - None
+    - Gr712rc
+    Errata:
+    - Tn0012
+    Check:
+    - PowerDown
+- enabled-by: true
+  post-conditions:
+    Status: Success
+  pre-conditions:
+    Part:
+    - Gr740
+    - Leon3ftRtax
+    Errata:
+    - None
+    Check:
+    - Tn0013
+- enabled-by: true
+  post-conditions:
+    Status: Success
+  pre-conditions:
+    Part:
+    - Gr740
+    Errata:
+    - None
+    Check:
+    - Tn0009
+    - Tn0011
+    - Tn0018
+- enabled-by: true
+  post-conditions:
+    Status: Success
+  pre-conditions:
+    Part:
+    - Leon3ftRtax
+    Errata:
+    - None
+    Check:
+    - Tn0016
+- enabled-by: true
+  post-conditions:
+    Status: Success
+  pre-conditions:
+    Part:
+    - Leon3ftRtax
+    - Ut699
+    - Ut699e
+    - Ut700
+    Errata:
+    - None
+    Check:
+    - Asi
+- enabled-by: true
+  post-conditions:
+    Status: Success
+  pre-conditions:
+    Part:
+    - None
+    - Gr712rc
+    - Gr740
+    - Ut699
+    - Ut699e
+    - Ut700
+    Errata:
+    - Tn0016
+    Check:
+    - Tn0009
+    - Tn0011
+    - Tn0012
+    - Tn0013
+    - Tn0018
+    - Asi
+    - PowerDown
+- enabled-by: true
+  post-conditions:
+    Status: Success
+  pre-conditions:
+    Part:
+    - None
+    - Gr712rc
+    - Ut699
+    - Ut699e
+    - Ut700
+    Errata:
+    - Tn0013
+    Check:
+    - Tn0009
+    - Tn0011
+    - Tn0012
+    - Tn0016
+    - Tn0018
+    - Asi
+    - PowerDown
+- enabled-by: true
+  post-conditions:
+    Status: Success
+  pre-conditions:
+    Part:
+    - None
+    - Gr712rc
+    - Leon3ftRtax
+    - Ut699
+    - Ut699e
+    - Ut700
+    Errata:
+    - Tn0009
+    - Tn0011
+    Check:
+    - Tn0018
+- enabled-by: true
+  post-conditions:
+    Status: Success
+  pre-conditions:
+    Part:
+    - None
+    - Gr712rc
+    - Leon3ftRtax
+    - Ut699
+    - Ut699e
+    - Ut700
+    Errata:
+    - Tn0009
+    - Tn0011
+    - Tn0018
+    Check:
+    - Tn0012
+    - Tn0013
+    - Tn0016
+    - Asi
+    - PowerDown
+- enabled-by: true
+  post-conditions:
+    Status: Success
+  pre-conditions:
+    Part:
+    - None
+    - Gr712rc
+    - Leon3ftRtax
+    - Ut699
+    - Ut699e
+    - Ut700
+    Errata:
+    - Tn0009
+    - Tn0018
+    Check:
+    - Tn0011
+- enabled-by: true
+  post-conditions:
+    Status: Success
+  pre-conditions:
+    Part:
+    - None
+    - Gr712rc
+    - Leon3ftRtax
+    - Ut699
+    - Ut699e
+    - Ut700
+    Errata:
+    - Tn0011
+    - Tn0018
+    Check:
+    - Tn0009
+- enabled-by: true
+  post-conditions:
+    Status: Success
+  pre-conditions:
+    Part:
+    - Gr740
+    - Leon3ftRtax
+    - Ut699
+    - Ut699e
+    - Ut700
+    Errata:
+    - None
+    Check:
+    - Tn0012
+    - PowerDown
+type: requirement

@@ -1,0 +1,231 @@
+SPDX-License-Identifier: CC-BY-SA-4.0 OR BSD-2-Clause
+copyrights:
+- Copyright (C) 2026 embedded brains GmbH & Co. KG
+enabled-by: true
+functional-type: action
+links:
+- role: requirement-refinement
+  uid: input
+post-conditions:
+- name: Symbol
+  states:
+  - name: Named
+    test-code: |
+      T_not_null( strstr( ctx->report, " <f+0x0>: " ) );
+    text: |
+      The errata checker shall name the symbol in the report line of the first
+      instruction.
+  - name: Unnamed
+    test-code: |
+      T_null( strchr( ctx->report, '<' ) );
+    text: |
+      The errata checker shall name no symbol in the report line of the first
+      instruction.
+  test-epilogue: null
+  test-prologue: null
+- name: Checked
+  states:
+  - name: 'Yes'
+    test-code: |
+      T_eq_int( TxCountAt( ctx->report, 0, "TN-0009" ), 1 );
+    text: |
+      The errata checker shall check the ${../glossary/code-section:/term}.
+  test-epilogue: null
+  test-prologue: null
+pre-conditions:
+- name: Symbol
+  states:
+  - name: Func
+    test-code: |
+      /* The symbol is a function */
+    text: |
+      While the symbol at the start of the ${../glossary/code-section:/term} is a
+      function.
+  - name: NoType
+    test-code: |
+      ( ctx->buf +
+        TxGet32( ctx->buf + TxSectionHeader( ctx->buf, TX_SECTION_SYMTAB ) + 16 ) +
+        16 )[ 12 ] = 0x10;
+    text: |
+      While the symbol at the start of the ${../glossary/code-section:/term} has no
+      type.
+  - name: Object
+    test-code: |
+      ( ctx->buf +
+        TxGet32( ctx->buf + TxSectionHeader( ctx->buf, TX_SECTION_SYMTAB ) + 16 ) +
+        16 )[ 12 ] = 0x11;
+    text: |
+      While the symbol at the start of the ${../glossary/code-section:/term} is an
+      object.
+  - name: OtherSection
+    test-code: |
+      TxPut16(
+        ctx->buf +
+          TxGet32(
+            ctx->buf + TxSectionHeader( ctx->buf, TX_SECTION_SYMTAB ) + 16
+          ) +
+          16 + 14,
+        3
+      );
+    text: |
+      While the symbol belongs to another section.
+  - name: NoName
+    test-code: |
+      TxPut32(
+        ctx->buf +
+          TxGet32(
+            ctx->buf + TxSectionHeader( ctx->buf, TX_SECTION_SYMTAB ) + 16
+          ) +
+          16,
+        0
+      );
+    text: |
+      While the symbol has no name.
+  - name: NameOutside
+    test-code: |
+      TxPut32(
+        ctx->buf +
+          TxGet32(
+            ctx->buf + TxSectionHeader( ctx->buf, TX_SECTION_SYMTAB ) + 16
+          ) +
+          16,
+        0x10000
+      );
+    text: |
+      While the name of the symbol exceeds the string table.
+  test-epilogue: null
+  test-prologue: null
+- name: Symtab
+  states:
+  - name: Present
+    test-code: |
+      /* The symbol table is valid */
+    text: |
+      While the ELF file has a valid symbol table.
+  - name: Absent
+    test-code: |
+      TxPut32( ctx->buf + TxSectionHeader( ctx->buf, TX_SECTION_SYMTAB ) + 4, 0 );
+    text: |
+      While the ELF file has no symbol table.
+  - name: LinkOutside
+    test-code: |
+      TxPut32( ctx->buf + TxSectionHeader( ctx->buf, TX_SECTION_SYMTAB ) + 24, 6 );
+    text: |
+      While the string table index of the symbol table exceeds the section count.
+  - name: TableOutside
+    test-code: |
+      TxPut32(
+        ctx->buf + TxSectionHeader( ctx->buf, TX_SECTION_SYMTAB ) + 16,
+        0x10000
+      );
+    text: |
+      While the symbol table exceeds the file.
+  - name: StringsOutside
+    test-code: |
+      TxPut32(
+        ctx->buf + TxSectionHeader( ctx->buf, TX_SECTION_STRTAB ) + 16,
+        0x10000
+      );
+    text: |
+      While the string table of the symbol table exceeds the file.
+  - name: NoMemory
+    test-code: |
+      TxFailMallocAfter( 1 );
+    text: |
+      While the allocation of the symbols fails.
+  test-epilogue: null
+  test-prologue: null
+rationale: |
+  Dimension Symbol covers the symbols of an ELF file, 6 states.
+
+  Dimension Symtab covers the symbol tables of an ELF file, 6 states.
+
+  The arrangement of Symbol changes the symbol through the symbol table. It comes
+  before the arrangement of Symtab, which may move the symbol table.
+
+  The report line names the function or the symbol without type which precedes
+  the instruction in its ${../glossary/code-section:/term}. A defect of the
+  symbol table removes the names from the report, and the errata checker still
+  checks the ${../glossary/code-section:/term}.
+references: []
+requirement-type: functional
+skip-reasons: {}
+test-action: |
+  ctx->report = TxCheckBuffer( ctx->buf, ctx->size, NOTE_0009 );
+  TxFailNext( 0 );
+test-brief: null
+test-cleanup: null
+test-context:
+- brief: |
+    This member contains the ELF file.
+  description: null
+  member: |
+    uint8_t buf[ 4096 ]
+- brief: |
+    This member contains the size of the ELF file.
+  description: null
+  member: |
+    size_t size
+- brief: |
+    This member references the report of the errata checker.
+  description: null
+  member: |
+    const char *report
+test-context-support: null
+test-description: null
+test-header: null
+test-includes: []
+test-local-includes:
+- nopinion.h
+- tx-support.h
+test-prepare: |
+  TxImage image;
+
+  TxImageInit( &image );
+  TxAppend( &image, TxSt() );
+  TxAppend( &image, TxAdd() );
+  TxAppend( &image, TxSt() );
+  ctx->size = TxBuildElf( &image, ctx->buf, sizeof( ctx->buf ) );
+test-setup: null
+test-stop: null
+test-support: null
+test-target: nopinion/tests/tc-input-symbols.c
+test-teardown: null
+text: |
+  ${.:text-template}
+transition-map:
+- enabled-by: true
+  post-conditions:
+    Symbol: Named
+    Checked: 'Yes'
+  pre-conditions:
+    Symbol:
+    - Func
+    - NoType
+    Symtab:
+    - Present
+- enabled-by: true
+  post-conditions:
+    Symbol: Unnamed
+    Checked: 'Yes'
+  pre-conditions:
+    Symbol:
+    - Object
+    - OtherSection
+    - NoName
+    - NameOutside
+    Symtab:
+    - Present
+- enabled-by: true
+  post-conditions:
+    Symbol: Unnamed
+    Checked: 'Yes'
+  pre-conditions:
+    Symbol: all
+    Symtab:
+    - Absent
+    - LinkOutside
+    - TableOutside
+    - StringsOutside
+    - NoMemory
+type: requirement

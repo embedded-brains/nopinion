@@ -1,0 +1,39 @@
+SPDX-License-Identifier: CC-BY-SA-4.0 OR BSD-2-Clause
+copyrights:
+- Copyright (C) 2026 embedded brains GmbH & Co. KG
+enabled-by: true
+# This configuration supports specwareexport and specwareview in this
+# repository.  The repository rtems is a sibling of this repository.
+item-cache:
+  paths:
+    ../rtems/spec: /
+    spec/build: /build/
+    spec/license: /license/
+    spec/nopinion: /nopinion/
+    # The directory holds copies of reference items of rtems with their UIDs.
+    spec/ref: /ref/
+  resolve-proxies: true
+  spec-type-root-uid: /spec/root
+links: []
+tasks:
+- accepted-licenses: []
+  license: CC-BY-SA-4.0
+  project-groups:
+  - /nopinion/glossary/group
+  task-name: glossary
+  task-type: glossary
+- accepted-licenses: []
+  # A test target of an item is relative to the directory which holds the
+  # module directories.  The export resolves it from the test program build
+  # item, so the map takes the directory of the build items.
+  base-directory-map:
+  - source: spec/build
+    target: ..
+  license: BSD-2-Clause
+  option-expressions: []
+  task-name: validation
+  task-type: validation
+- root-type: /spec/root
+  task-name: spec-verification
+  task-type: spec-verification
+type: tool-config

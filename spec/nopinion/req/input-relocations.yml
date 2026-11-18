@@ -1,0 +1,198 @@
+SPDX-License-Identifier: CC-BY-SA-4.0 OR BSD-2-Clause
+copyrights:
+- Copyright (C) 2026 embedded brains GmbH & Co. KG
+enabled-by: true
+functional-type: action
+links:
+- role: requirement-refinement
+  uid: input
+post-conditions:
+- name: Target
+  states:
+  - name: Known
+    test-code: |
+      T_eq_int( TxCountAt( ctx->report, 4, "TN-0009" ), 1 );
+      T_false( TxIsPossibleAt( ctx->report, 4, "TN-0009" ) );
+    text: |
+      The errata checker shall follow the CALL instruction to its target.
+  - name: Unknown
+    test-code: |
+      T_eq_int( TxCountAt( ctx->report, 4, "TN-0009" ), 1 );
+      T_true( TxIsPossibleAt( ctx->report, 4, "TN-0009" ) );
+    text: |
+      The errata checker shall treat the target of the CALL instruction as an
+      ${../glossary/unknown-instruction:/term}.
+  test-epilogue: null
+  test-prologue: null
+pre-conditions:
+- name: Type
+  states:
+  - name: Rela
+    test-code: |
+      ctx->image.rel = false;
+    text: |
+      While the relocation section has the type SHT_RELA.
+  - name: Rel
+    test-code: |
+      ctx->image.rel = true;
+    text: |
+      While the relocation section has the type SHT_REL.
+  test-epilogue: null
+  test-prologue: null
+- name: Section
+  states:
+  - name: Code
+    test-code: |
+      ctx->image.relocation_info = TX_SECTION_TEXT;
+    text: |
+      While the relocation section applies to the ${../glossary/code-section:/term}.
+  - name: Other
+    test-code: |
+      ctx->image.relocation_info = TX_SECTION_SYMTAB;
+    text: |
+      While the relocation section applies to another section.
+  test-epilogue: null
+  test-prologue: null
+- name: Table
+  states:
+  - name: Inside
+    test-code: |
+      ctx->outside = false;
+    text: |
+      While the relocation section is inside the file.
+  - name: Outside
+    test-code: |
+      ctx->outside = true;
+    text: |
+      While the relocation section exceeds the file.
+  test-epilogue: null
+  test-prologue: null
+- name: Offset
+  states:
+  - name: Inside
+    test-code: |
+      TxAddRelocation( &ctx->image, 0 );
+    text: |
+      While the relocation applies to the CALL instruction.
+  - name: Beyond
+    test-code: |
+      TxAddRelocation( &ctx->image, 1024 );
+    text: |
+      While the relocation applies to an offset beyond the
+      ${../glossary/code-section:/term}.
+  test-epilogue: null
+  test-prologue: null
+rationale: |
+  Dimension Type covers the types of a relocation section, 2 states.
+
+  Dimension Section covers the sections to which a relocation section applies, 2
+  states.
+
+  Dimension Table covers the placement of a relocation section in the file, 2
+  states.
+
+  Dimension Offset covers the offsets of a relocation, 2 states.
+
+  A relocation of a PC-relative instruction changes its target at link time, so
+  the target in the relocatable file is an
+  ${../glossary/unknown-instruction:/term}. The test checks a CALL instruction to
+  a store of word size with a store of double word size in the delay slot.
+  Sequence B of the stale cache entry erratum then shows whether the errata
+  checker knows the target.
+references: []
+requirement-type: functional
+skip-reasons: {}
+test-action: |
+  uint8_t buf[ 4096 ];
+  size_t  size;
+
+  size = TxBuildElf( &ctx->image, buf, sizeof( buf ) );
+
+  if ( ctx->outside ) {
+    TxPut32( buf + TxSectionHeader( buf, TX_SECTION_RELA ) + 16, 0x10000 );
+  }
+
+  ctx->report = TxCheckBuffer( buf, size, NOTE_0009 );
+test-brief: null
+test-cleanup: null
+test-context:
+- brief: |
+    This member contains the image of the ELF file to check.
+  description: null
+  member: |
+    TxImage image
+- brief: |
+    This member is true, if the relocation section exceeds the file.
+  description: null
+  member: |
+    bool outside
+- brief: |
+    This member references the report of the errata checker.
+  description: null
+  member: |
+    const char *report
+test-context-support: null
+test-description: null
+test-header: null
+test-includes: []
+test-local-includes:
+- nopinion.h
+- tx-support.h
+test-prepare: |
+  TxImageInit( &ctx->image );
+  TxAppend( &ctx->image, TxCall( 4 ) );
+  TxAppend( &ctx->image, TxStd() );
+  TxAppend( &ctx->image, TxAdd() );
+  TxAppend( &ctx->image, TxNop() );
+  TxAppend( &ctx->image, TxSt() );
+  TxAppend( &ctx->image, TxNop() );
+test-setup: null
+test-stop: null
+test-support: null
+test-target: nopinion/tests/tc-input-relocations.c
+test-teardown: null
+text: |
+  ${.:text-template}
+transition-map:
+- enabled-by: true
+  post-conditions:
+    Target: Unknown
+  pre-conditions:
+    Type: all
+    Section:
+    - Code
+    Table:
+    - Inside
+    Offset:
+    - Inside
+- enabled-by: true
+  post-conditions:
+    Target: Known
+  pre-conditions:
+    Type: all
+    Section:
+    - Other
+    Table: all
+    Offset: all
+- enabled-by: true
+  post-conditions:
+    Target: Known
+  pre-conditions:
+    Type: all
+    Section:
+    - Code
+    Table:
+    - Outside
+    Offset: all
+- enabled-by: true
+  post-conditions:
+    Target: Known
+  pre-conditions:
+    Type: all
+    Section:
+    - Code
+    Table:
+    - Inside
+    Offset:
+    - Beyond
+type: requirement

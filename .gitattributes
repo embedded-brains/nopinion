@@ -1,0 +1,6 @@
+# SPDX-License-Identifier: BSD-2-Clause
+# Copyright (C) 2026 embedded brains GmbH & Co. KG
+
+CODE_OF_CONDUCT.md -prose
+DCO.txt -prose
+LICENSE.md -prose

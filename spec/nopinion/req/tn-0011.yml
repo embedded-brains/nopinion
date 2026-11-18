@@ -1,0 +1,19 @@
+SPDX-License-Identifier: CC-BY-SA-4.0 OR BSD-2-Clause
+copyrights:
+- Copyright (C) 2026 embedded brains GmbH & Co. KG
+enabled-by: true
+functional-type: function
+links:
+- role: requirement-refinement
+  uid: group
+- location: section 3.1
+  role: reference
+  uid: /ref/ip/gaisler/grlib-tn-0011-1-5
+rationale: null
+references: []
+requirement-type: functional
+text: |
+  The errata checker shall report a ${../glossary/finding:/term} for each atomic
+  instruction which violates the workaround of the AHB lock release during atomic
+  operation erratum.
+type: requirement

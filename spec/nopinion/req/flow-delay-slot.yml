@@ -1,0 +1,531 @@
+SPDX-License-Identifier: CC-BY-SA-4.0 OR BSD-2-Clause
+copyrights:
+- Copyright (C) 2026 embedded brains GmbH & Co. KG
+enabled-by: true
+functional-type: action
+links:
+- role: requirement-refinement
+  uid: flow
+post-conditions:
+- name: Fall
+  states:
+  - name: None
+    test-code: |
+      T_eq_int( ctx->fall, TX_FLOW_NONE );
+    text: |
+      The errata checker shall report no ${../glossary/finding:/term} for the store
+      of double word size in the fall-through probe.
+  - name: Definite
+    test-code: |
+      T_eq_int( ctx->fall, TX_FLOW_DEFINITE );
+    text: |
+      The errata checker shall report one ${../glossary/definite-finding:/term} for
+      the store of double word size in the fall-through probe.
+  - name: Possible
+    test-code: |
+      T_eq_int( ctx->fall, TX_FLOW_POSSIBLE );
+    text: |
+      The errata checker shall report one ${../glossary/possible-finding:/term} for
+      the store of double word size in the fall-through probe.
+  test-epilogue: null
+  test-prologue: null
+- name: Branch
+  states:
+  - name: None
+    test-code: |
+      T_eq_int( ctx->branch, TX_FLOW_NONE );
+    text: |
+      The errata checker shall report no ${../glossary/finding:/term} for the store
+      of double word size in the target probe.
+  - name: Definite
+    test-code: |
+      T_eq_int( ctx->branch, TX_FLOW_DEFINITE );
+    text: |
+      The errata checker shall report one ${../glossary/definite-finding:/term} for
+      the store of double word size in the target probe.
+  - name: Possible
+    test-code: |
+      T_eq_int( ctx->branch, TX_FLOW_POSSIBLE );
+    text: |
+      The errata checker shall report one ${../glossary/possible-finding:/term} for
+      the store of double word size in the target probe.
+  test-epilogue: null
+  test-prologue: null
+pre-conditions:
+- name: Instruction
+  states:
+  - name: BiccCond
+    test-code: |
+      ctx->kind = KindBiccCond;
+    text: |
+      While the instruction is a conditional branch on integer condition codes with
+      the annul bit cleared.
+  - name: BiccCondAnnul
+    test-code: |
+      ctx->kind = KindBiccCondAnnul;
+    text: |
+      While the instruction is a conditional branch on integer condition codes with
+      the annul bit set.
+  - name: BiccAlways
+    test-code: |
+      ctx->kind = KindBiccAlways;
+    text: |
+      While the instruction is a branch always on integer condition codes with the
+      annul bit cleared.
+  - name: BiccAlwaysAnnul
+    test-code: |
+      ctx->kind = KindBiccAlwaysAnnul;
+    text: |
+      While the instruction is a branch always on integer condition codes with the
+      annul bit set.
+  - name: BiccNever
+    test-code: |
+      ctx->kind = KindBiccNever;
+    text: |
+      While the instruction is a branch never on integer condition codes with the
+      annul bit cleared.
+  - name: BiccNeverAnnul
+    test-code: |
+      ctx->kind = KindBiccNeverAnnul;
+    text: |
+      While the instruction is a branch never on integer condition codes with the
+      annul bit set.
+  - name: FbfccCond
+    test-code: |
+      ctx->kind = KindFbfccCond;
+    text: |
+      While the instruction is a conditional branch on floating-point condition codes
+      with the annul bit cleared.
+  - name: FbfccCondAnnul
+    test-code: |
+      ctx->kind = KindFbfccCondAnnul;
+    text: |
+      While the instruction is a conditional branch on floating-point condition codes
+      with the annul bit set.
+  - name: CbcccCond
+    test-code: |
+      ctx->kind = KindCbcccCond;
+    text: |
+      While the instruction is a conditional branch on coprocessor condition codes
+      with the annul bit cleared.
+  - name: Call
+    test-code: |
+      ctx->kind = KindCall;
+    text: |
+      While the instruction is a CALL instruction.
+  - name: Jmpl
+    test-code: |
+      ctx->kind = KindJmpl;
+    text: |
+      While the instruction is a JMPL instruction.
+  - name: Rett
+    test-code: |
+      ctx->kind = KindRett;
+    text: |
+      While the instruction is an RETT instruction.
+  - name: TrapAlways
+    test-code: |
+      ctx->kind = KindTrapAlways;
+    text: |
+      While the instruction is a trap always instruction.
+  - name: TrapCond
+    test-code: |
+      ctx->kind = KindTrapCond;
+    text: |
+      While the instruction is a conditional trap instruction.
+  - name: Other
+    test-code: |
+      ctx->kind = KindOther;
+    text: |
+      While the instruction is an instruction which transfers no control.
+  test-epilogue: null
+  test-prologue: null
+- name: Target
+  states:
+  - name: Inside
+    test-code: |
+      ctx->disp = 4;
+      ctx->relocated = false;
+    text: |
+      While the PC-relative target of the instruction is in the
+      ${../glossary/code-section:/term}.
+  - name: Outside
+    test-code: |
+      ctx->disp = 100;
+      ctx->relocated = false;
+    text: |
+      While the PC-relative target of the instruction is outside the
+      ${../glossary/code-section:/term}.
+  - name: Relocated
+    test-code: |
+      ctx->disp = 4;
+      ctx->relocated = true;
+    text: |
+      While a relocation applies to the instruction.
+  test-epilogue: null
+  test-prologue: null
+- name: SlotIsTarget
+  states:
+  - name: 'Yes'
+    test-code: |
+      ctx->slot_is_target = true;
+    text: |
+      While the delay slot is the target of another branch.
+  - name: 'No'
+    test-code: |
+      ctx->slot_is_target = false;
+    text: |
+      While the delay slot is the target of no other branch.
+  test-epilogue: null
+  test-prologue: null
+- name: Indirect
+  states:
+  - name: 'Yes'
+    test-code: |
+      TxSetIncludeIndirect( true );
+    text: |
+      While the option -i is given.
+  - name: 'No'
+    test-code: |
+      TxSetIncludeIndirect( false );
+    text: |
+      While the option -i is not given.
+  test-epilogue: null
+  test-prologue: null
+rationale: |
+  Dimension Instruction covers the control-transfer instructions of SPARC V8 by
+  their effect on the delay slot and an instruction which transfers no control,
+  15 states.
+
+  Dimension Target covers the targets of an instruction, 3 states.
+
+  Dimension SlotIsTarget covers the branches of the
+  ${../glossary/code-section:/term} to the delay slot, 2 states.
+
+  Dimension Indirect covers the options of the errata checker, 2 states.
+
+  The test checks the ${../glossary/code-section:/term} with the instruction at
+  offset 0 and a store of double word size in its delay slot. Sequence B of the
+  stale cache entry erratum then gives a finding for that store, if the flow of
+  execution reaches a store after it. The instruction after the delay slot holds
+  the store in the fall-through probe. The target of the instruction holds the
+  store in the target probe.
+
+  Section B.21 of SPARC V8 states the annul bit. A conditional branch with the
+  annul bit set executes the delay slot only if it branches. A branch always with
+  the annul bit set never executes the delay slot. A branch never with the annul
+  bit set never executes the delay slot either. A trap instruction has no delay
+  slot.
+
+  The target of JMPL and RETT depends on a register. The flow of execution ends
+  there unless the option -i is given. The option makes the target an
+  ${../glossary/unknown-instruction:/term}. A PC-relative target outside the
+  ${../glossary/code-section:/term} and the target of a relocated instruction are
+  ${../glossary/unknown-instruction:/term} instructions.
+references: []
+requirement-type: functional
+skip-reasons: {}
+test-action: |
+  uint32_t x;
+  int32_t  disp = ctx->disp;
+
+  switch ( ctx->kind ) {
+    case KindBiccCond:
+      x = TxBicc( 9, false, disp );
+      break;
+    case KindBiccCondAnnul:
+      x = TxBicc( 9, true, disp );
+      break;
+    case KindBiccAlways:
+      x = TxBicc( 8, false, disp );
+      break;
+    case KindBiccAlwaysAnnul:
+      x = TxBicc( 8, true, disp );
+      break;
+    case KindBiccNever:
+      x = TxBicc( 0, false, disp );
+      break;
+    case KindBiccNeverAnnul:
+      x = TxBicc( 0, true, disp );
+      break;
+    case KindFbfccCond:
+      x = TxFbfcc( false, disp );
+      break;
+    case KindFbfccCondAnnul:
+      x = TxFbfcc( true, disp );
+      break;
+    case KindCbcccCond:
+      x = TxCbccc( disp );
+      break;
+    case KindCall:
+      x = TxCall( disp );
+      break;
+    case KindJmpl:
+      x = TxJmpl();
+      break;
+    case KindRett:
+      x = TxRett();
+      break;
+    case KindTrapAlways:
+      x = TxTa();
+      break;
+    case KindTrapCond:
+      x = TxFormat3Imm( 2, 0x3a, 9, TX_G0, 0 );
+      break;
+    case KindOther:
+      x = TxAdd();
+      break;
+    default:
+      x = TxAdd();
+      break;
+  }
+
+  (void) disp;
+  ctx->fall = TxProbeFlow( x, ctx->relocated, ctx->slot_is_target, true );
+  ctx->branch = TxProbeFlow( x, ctx->relocated, ctx->slot_is_target, false );
+test-brief: null
+test-cleanup: |
+  TxSetIncludeIndirect( false );
+test-context:
+- brief: |
+    This member specifies the kind of the instruction.
+  description: null
+  member: |
+    int kind
+- brief: |
+    This member specifies the displacement of a PC-relative instruction.
+  description: null
+  member: |
+    int32_t disp
+- brief: |
+    This member is true, if a relocation applies to the instruction.
+  description: null
+  member: |
+    bool relocated
+- brief: |
+    This member is true, if the delay slot is the target of another branch.
+  description: null
+  member: |
+    bool slot_is_target
+- brief: |
+    This member contains the finding with the store after the delay slot.
+  description: null
+  member: |
+    TxFlowFinding fall
+- brief: |
+    This member contains the finding with the store at the target.
+  description: null
+  member: |
+    TxFlowFinding branch
+test-context-support: |
+  typedef enum {
+    KindBiccCond,
+    KindBiccCondAnnul,
+    KindBiccAlways,
+    KindBiccAlwaysAnnul,
+    KindBiccNever,
+    KindBiccNeverAnnul,
+    KindFbfccCond,
+    KindFbfccCondAnnul,
+    KindCbcccCond,
+    KindCall,
+    KindJmpl,
+    KindRett,
+    KindTrapAlways,
+    KindTrapCond,
+    KindOther,
+  } Kind;
+test-description: null
+test-header: null
+test-includes: []
+test-local-includes:
+- nopinion.h
+- tx-support.h
+test-prepare: null
+test-setup: null
+test-stop: null
+test-support: null
+test-target: nopinion/tests/tc-flow-delay-slot.c
+test-teardown: null
+text: |
+  ${.:text-template}
+transition-map:
+- enabled-by: true
+  post-conditions:
+    Fall: Definite
+    Branch: Definite
+  pre-conditions:
+    Instruction:
+    - BiccCond
+    - FbfccCond
+    - CbcccCond
+    Target:
+    - Inside
+    SlotIsTarget: all
+    Indirect: all
+- enabled-by: true
+  post-conditions:
+    Fall: Definite
+    Branch: Definite
+  pre-conditions:
+    Instruction:
+    - BiccCondAnnul
+    - BiccAlways
+    - FbfccCondAnnul
+    - Call
+    Target:
+    - Inside
+    SlotIsTarget:
+    - 'Yes'
+    Indirect: all
+- enabled-by: true
+  post-conditions:
+    Fall: Definite
+    Branch: None
+  pre-conditions:
+    Instruction:
+    - BiccAlwaysAnnul
+    - BiccNeverAnnul
+    Target: all
+    SlotIsTarget:
+    - 'Yes'
+    Indirect: all
+- enabled-by: true
+  post-conditions:
+    Fall: Definite
+    Branch: None
+  pre-conditions:
+    Instruction:
+    - BiccNever
+    - TrapAlways
+    - TrapCond
+    - Other
+    Target: all
+    SlotIsTarget: all
+    Indirect: all
+- enabled-by: true
+  post-conditions:
+    Fall: Definite
+    Branch: None
+  pre-conditions:
+    Instruction:
+    - Jmpl
+    - Rett
+    Target: all
+    SlotIsTarget:
+    - 'Yes'
+    Indirect:
+    - 'No'
+- enabled-by: true
+  post-conditions:
+    Fall: Definite
+    Branch: Possible
+  pre-conditions:
+    Instruction:
+    - BiccCond
+    - FbfccCond
+    - CbcccCond
+    Target:
+    - Outside
+    - Relocated
+    SlotIsTarget: all
+    Indirect: all
+- enabled-by: true
+  post-conditions:
+    Fall: Definite
+    Branch: Possible
+  pre-conditions:
+    Instruction:
+    - BiccCondAnnul
+    - BiccAlways
+    - FbfccCondAnnul
+    - Call
+    Target:
+    - Outside
+    - Relocated
+    SlotIsTarget:
+    - 'Yes'
+    Indirect: all
+- enabled-by: true
+  post-conditions:
+    Fall: Definite
+    Branch: Possible
+  pre-conditions:
+    Instruction:
+    - Jmpl
+    - Rett
+    Target: all
+    SlotIsTarget:
+    - 'Yes'
+    Indirect:
+    - 'Yes'
+- enabled-by: true
+  post-conditions:
+    Fall: None
+    Branch: Definite
+  pre-conditions:
+    Instruction:
+    - BiccCondAnnul
+    - BiccAlways
+    - FbfccCondAnnul
+    - Call
+    Target:
+    - Inside
+    SlotIsTarget:
+    - 'No'
+    Indirect: all
+- enabled-by: true
+  post-conditions:
+    Fall: None
+    Branch: None
+  pre-conditions:
+    Instruction:
+    - BiccAlwaysAnnul
+    - BiccNeverAnnul
+    Target: all
+    SlotIsTarget:
+    - 'No'
+    Indirect: all
+- enabled-by: true
+  post-conditions:
+    Fall: None
+    Branch: None
+  pre-conditions:
+    Instruction:
+    - Jmpl
+    - Rett
+    Target: all
+    SlotIsTarget:
+    - 'No'
+    Indirect:
+    - 'No'
+- enabled-by: true
+  post-conditions:
+    Fall: Possible
+    Branch: Possible
+  pre-conditions:
+    Instruction:
+    - BiccCondAnnul
+    - BiccAlways
+    - FbfccCondAnnul
+    - Call
+    Target:
+    - Outside
+    - Relocated
+    SlotIsTarget:
+    - 'No'
+    Indirect: all
+- enabled-by: true
+  post-conditions:
+    Fall: Possible
+    Branch: Possible
+  pre-conditions:
+    Instruction:
+    - Jmpl
+    - Rett
+    Target: all
+    SlotIsTarget:
+    - 'No'
+    Indirect:
+    - 'Yes'
+type: requirement

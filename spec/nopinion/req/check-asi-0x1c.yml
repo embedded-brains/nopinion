@@ -1,0 +1,242 @@
+SPDX-License-Identifier: CC-BY-SA-4.0 OR BSD-2-Clause
+copyrights:
+- Copyright (C) 2026 embedded brains GmbH & Co. KG
+enabled-by: true
+functional-type: action
+links:
+- role: requirement-refinement
+  uid: asi-0x1c
+post-conditions:
+- name: Kind
+  states:
+  - name: None
+    test-code: |
+      T_eq_int( TxCountAt( ctx->report, 0, "GR712RC-19" ), 0 );
+    text: |
+      The errata checker shall report no ${../glossary/finding:/term} of a store
+      with the address space identifier 0x1C.
+  - name: Store
+    test-code: |
+      T_eq_int( TxCountAt( ctx->report, 0, "GR712RC-19" ), 1 );
+      T_eq_int( TxCountAt( ctx->report, 0, "store-asi-0x1c" ), 1 );
+      T_false( TxIsPossibleAt( ctx->report, 0, "store-asi-0x1c" ) );
+    text: |
+      The errata checker shall report one ${../glossary/definite-finding:/term} of
+      a store instruction with the address space identifier 0x1C for the
+      instruction.
+  - name: Atomic
+    test-code: |
+      T_eq_int( TxCountAt( ctx->report, 0, "GR712RC-19" ), 1 );
+      T_eq_int( TxCountAt( ctx->report, 0, "atomic-asi-0x1c" ), 1 );
+      T_false( TxIsPossibleAt( ctx->report, 0, "atomic-asi-0x1c" ) );
+    text: |
+      The errata checker shall report one ${../glossary/definite-finding:/term} of
+      an atomic load-store instruction with the address space identifier 0x1C for
+      the instruction.
+  test-epilogue: null
+  test-prologue: null
+pre-conditions:
+- name: Instruction
+  states:
+  - name: Sta
+    test-code: |
+      ctx->op3 = 0x14;
+      ctx->rd = TX_G1;
+      ctx->rs2 = TX_G0;
+    text: |
+      While the instruction is an STA instruction.
+  - name: Stba
+    test-code: |
+      ctx->op3 = 0x15;
+      ctx->rd = TX_G1;
+      ctx->rs2 = TX_G0;
+    text: |
+      While the instruction is an STBA instruction.
+  - name: Stha
+    test-code: |
+      ctx->op3 = 0x16;
+      ctx->rd = TX_G1;
+      ctx->rs2 = TX_G0;
+    text: |
+      While the instruction is an STHA instruction.
+  - name: Stda
+    test-code: |
+      ctx->op3 = 0x17;
+      ctx->rd = TX_L2;
+      ctx->rs2 = TX_G0;
+    text: |
+      While the instruction is an STDA instruction.
+  - name: Ldstuba
+    test-code: |
+      ctx->op3 = 0x1d;
+      ctx->rd = TX_G1;
+      ctx->rs2 = TX_G0;
+    text: |
+      While the instruction is an LDSTUBA instruction.
+  - name: Swapa
+    test-code: |
+      ctx->op3 = 0x1f;
+      ctx->rd = TX_G1;
+      ctx->rs2 = TX_G0;
+    text: |
+      While the instruction is a SWAPA instruction.
+  - name: Casa
+    test-code: |
+      ctx->op3 = 0x3c;
+      ctx->rd = TX_G1;
+      ctx->rs2 = TX_O1;
+    text: |
+      While the instruction is a CASA instruction.
+  - name: Lda
+    test-code: |
+      ctx->op3 = 0x10;
+      ctx->rd = TX_G1;
+      ctx->rs2 = TX_G0;
+    text: |
+      While the instruction is an LDA instruction.
+  - name: St
+    test-code: |
+      ctx->op3 = 0x04;
+      ctx->rd = TX_G1;
+      ctx->rs2 = TX_G0;
+    text: |
+      While the instruction is an ST instruction.
+  test-epilogue: null
+  test-prologue: null
+- name: Asi
+  states:
+  - name: Bypass
+    test-code: |
+      ctx->instruction =
+        TxFormat3Asi( 3, ctx->op3, ctx->rd, TX_O0, 0x1c, ctx->rs2 );
+    text: |
+      While the field i of the instruction is 0, while the field asi of the
+      instruction is 0x1C.
+  - name: Other
+    test-code: |
+      ctx->instruction =
+        TxFormat3Asi( 3, ctx->op3, ctx->rd, TX_O0, 0x0b, ctx->rs2 );
+    text: |
+      While the field i of the instruction is 0, while the field asi of the
+      instruction is 0x0B.
+  - name: Immediate
+    test-code: |
+      ctx->instruction =
+        TxFormat3Imm( 3, ctx->op3, ctx->rd, TX_O0, 0x1c << 5 );
+    text: |
+      While the field i of the instruction is 1, while bits 12 to 5 of the
+      instruction hold 0x1C.
+  test-epilogue: null
+  test-prologue: null
+rationale: |
+  Dimension Instruction covers the store alternate instructions, the atomic
+  load-store alternate instructions, a load alternate instruction and a store, 9
+  states. Section B.4 of SPARC V8 defines the store alternate instructions. Sections B.7 and B.8 of SPARC V8 define
+  the atomic load-store alternate instructions. The LEON processors add CASA.
+
+  Dimension Asi covers the address space identifier 0x1C, another identifier and
+  an immediate operand, 3 states.
+
+  Section 1.7.19 of the GR712RC user manual describes a store with the address
+  space identifier 0x1C. The data cache handles it like a regular store. Section
+  43.2.5 of the GR740 user manual states the same. An atomic load-store instruction stores, so
+  the errata checker reports it as a separate kind. Section B.4 of SPARC V8 gives
+  the address space identifier in the field asi for i = 0. An alternate
+  instruction with i = 1 is an illegal instruction in SPARC V8, so it stores
+  nothing. The instruction is the first and only instruction of the
+  ${../glossary/code-section:/term}.
+references: []
+requirement-type: functional
+skip-reasons: {}
+test-action: |
+  TxAppend( &ctx->image, ctx->instruction );
+  ctx->report = TxCheck( &ctx->image, NOTE_ASI_1C );
+test-brief: null
+test-cleanup: null
+test-context:
+- brief: |
+    This member contains the image of the ELF file to check.
+  description: null
+  member: |
+    TxImage image
+- brief: |
+    This member contains the field op3 of the instruction.
+  description: null
+  member: |
+    uint32_t op3
+- brief: |
+    This member contains the field rd of the instruction.
+  description: null
+  member: |
+    uint32_t rd
+- brief: |
+    This member contains the field rs2 of the instruction.
+  description: null
+  member: |
+    uint32_t rs2
+- brief: |
+    This member contains the instruction.
+  description: null
+  member: |
+    uint32_t instruction
+- brief: |
+    This member references the report of the errata checker.
+  description: null
+  member: |
+    const char *report
+test-context-support: null
+test-description: null
+test-header: null
+test-includes: []
+test-local-includes:
+- nopinion.h
+- tx-support.h
+test-prepare: |
+  TxImageInit( &ctx->image );
+test-setup: null
+test-stop: null
+test-support: null
+test-target: nopinion/tests/tc-check-asi-0x1c.c
+test-teardown: null
+text: |
+  ${.:text-template}
+transition-map:
+- enabled-by: true
+  post-conditions:
+    Kind: Atomic
+  pre-conditions:
+    Instruction:
+    - Ldstuba
+    - Swapa
+    - Casa
+    Asi:
+    - Bypass
+- enabled-by: true
+  post-conditions:
+    Kind: None
+  pre-conditions:
+    Instruction:
+    - Lda
+    - St
+    Asi:
+    - Bypass
+- enabled-by: true
+  post-conditions:
+    Kind: None
+  pre-conditions:
+    Instruction: all
+    Asi:
+    - Other
+    - Immediate
+- enabled-by: true
+  post-conditions:
+    Kind: Store
+  pre-conditions:
+    Instruction:
+    - Sta
+    - Stba
+    - Stha
+    - Stda
+    Asi:
+    - Bypass
+type: requirement

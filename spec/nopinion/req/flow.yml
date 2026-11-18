@@ -1,0 +1,18 @@
+SPDX-License-Identifier: CC-BY-SA-4.0 OR BSD-2-Clause
+copyrights:
+- Copyright (C) 2026 embedded brains GmbH & Co. KG
+enabled-by: true
+functional-type: function
+links:
+- role: requirement-refinement
+  uid: group
+- location: section 5.5 and appendix B
+  role: reference
+  uid: /ref/arch/sparc/v8
+rationale: null
+references: []
+requirement-type: functional
+text: |
+  The errata checker shall match an instruction sequence of an erratum along the
+  flow of execution of SPARC V8.
+type: requirement

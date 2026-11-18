@@ -1,0 +1,25 @@
+SPDX-License-Identifier: CC-BY-SA-4.0 OR BSD-2-Clause
+copyrights:
+- Copyright (C) 2026 embedded brains GmbH & Co. KG
+enabled-by: true
+functional-type: function
+links:
+- role: requirement-refinement
+  uid: group
+- location: section 4.1
+  role: reference
+  uid: /ref/ip/gaisler/grlib-tn-0018-1-1
+- location: section 4.5.1
+  role: reference
+  uid: /ref/ip/gaisler/grlib-tn-0018-1-1
+- location: section 5.1
+  role: reference
+  uid: /ref/ip/gaisler/grlib-tn-0018-1-1
+rationale: null
+references: []
+requirement-type: functional
+text: |
+  The errata checker shall report a ${../glossary/finding:/term} for each
+  JMPL, RETT pair without workaround #1 of the RETT restart erratum and for each
+  trap instruction which returns to a JMPL instruction.
+type: requirement

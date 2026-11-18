@@ -1,0 +1,859 @@
+SPDX-License-Identifier: CC-BY-SA-4.0 OR BSD-2-Clause
+copyrights:
+- Copyright (C) 2026 embedded brains GmbH & Co. KG
+enabled-by: true
+functional-type: action
+links:
+- role: requirement-refinement
+  uid: decode
+post-conditions:
+- name: Kind
+  states:
+  - name: Fpop1
+    test-code: |
+      T_true( ctx->probe.is_fpop );
+      T_false( ctx->probe.is_div );
+    text: |
+      The errata checker shall classify the instruction as an FPop1 instruction other
+      than FDIV and FSQRT.
+  - name: Div
+    test-code: |
+      T_true( ctx->probe.is_fpop );
+      T_true( ctx->probe.is_div );
+      T_false( ctx->probe.counted );
+    text: |
+      The errata checker shall classify the instruction as an FDIV or FSQRT
+      instruction.
+  - name: Fpop2
+    test-code: |
+      T_true( ctx->probe.is_fpop );
+      T_false( ctx->probe.is_div );
+      T_false( ctx->probe.counted );
+    text: |
+      The errata checker shall classify the instruction as an FPop2 instruction.
+  test-epilogue: null
+  test-prologue: null
+- name: Rs1
+  states:
+  - name: None
+    test-code: |
+      T_false( ctx->probe.any );
+      T_eq_int( ctx->probe.width[ TX_RS1 ], 0 );
+    text: |
+      The errata checker shall treat the instruction as an instruction without a
+      first source operand.
+  - name: Single
+    test-code: |
+      T_false( ctx->probe.any );
+      T_eq_int( ctx->probe.width[ TX_RS1 ], 1 );
+    text: |
+      The errata checker shall treat the first source operand of the instruction as
+      one register.
+  - name: Double
+    test-code: |
+      T_false( ctx->probe.any );
+      T_eq_int( ctx->probe.width[ TX_RS1 ], 2 );
+    text: |
+      The errata checker shall treat the first source operand of the instruction as
+      two registers.
+  - name: Quad
+    test-code: |
+      T_false( ctx->probe.any );
+      T_eq_int( ctx->probe.width[ TX_RS1 ], 4 );
+    text: |
+      The errata checker shall treat the first source operand of the instruction as
+      four registers.
+  - name: Any
+    test-code: |
+      T_true( ctx->probe.any );
+      T_eq_int( ctx->probe.width[ TX_RS1 ], 4 );
+    text: |
+      The errata checker shall treat the first source operand of the instruction as a
+      dependency on every floating-point register.
+  test-epilogue: null
+  test-prologue: null
+- name: Rs2
+  states:
+  - name: None
+    test-code: |
+      T_false( ctx->probe.any );
+      T_eq_int( ctx->probe.width[ TX_RS2 ], 0 );
+    text: |
+      The errata checker shall treat the instruction as an instruction without a
+      second source operand.
+  - name: Single
+    test-code: |
+      T_false( ctx->probe.any );
+      T_eq_int( ctx->probe.width[ TX_RS2 ], 1 );
+    text: |
+      The errata checker shall treat the second source operand of the instruction as
+      one register.
+  - name: Double
+    test-code: |
+      T_false( ctx->probe.any );
+      T_eq_int( ctx->probe.width[ TX_RS2 ], 2 );
+    text: |
+      The errata checker shall treat the second source operand of the instruction as
+      two registers.
+  - name: Quad
+    test-code: |
+      T_false( ctx->probe.any );
+      T_eq_int( ctx->probe.width[ TX_RS2 ], 4 );
+    text: |
+      The errata checker shall treat the second source operand of the instruction as
+      four registers.
+  - name: Any
+    test-code: |
+      T_true( ctx->probe.any );
+      T_eq_int( ctx->probe.width[ TX_RS2 ], 4 );
+    text: |
+      The errata checker shall treat the second source operand of the instruction as
+      a dependency on every floating-point register.
+  test-epilogue: null
+  test-prologue: null
+- name: Rd
+  states:
+  - name: None
+    test-code: |
+      T_false( ctx->probe.any );
+      T_eq_int( ctx->probe.width[ TX_RD ], 0 );
+    text: |
+      The errata checker shall treat the instruction as an instruction without a
+      destination operand.
+  - name: Single
+    test-code: |
+      T_false( ctx->probe.any );
+      T_eq_int( ctx->probe.width[ TX_RD ], 1 );
+    text: |
+      The errata checker shall treat the destination operand of the instruction as
+      one register.
+  - name: Double
+    test-code: |
+      T_false( ctx->probe.any );
+      T_eq_int( ctx->probe.width[ TX_RD ], 2 );
+    text: |
+      The errata checker shall treat the destination operand of the instruction as
+      two registers.
+  - name: Quad
+    test-code: |
+      T_false( ctx->probe.any );
+      T_eq_int( ctx->probe.width[ TX_RD ], 4 );
+    text: |
+      The errata checker shall treat the destination operand of the instruction as
+      four registers.
+  - name: Any
+    test-code: |
+      T_true( ctx->probe.any );
+      T_eq_int( ctx->probe.width[ TX_RD ], 4 );
+    text: |
+      The errata checker shall treat the destination operand of the instruction as a
+      dependency on every floating-point register.
+  test-epilogue: null
+  test-prologue: null
+pre-conditions:
+- name: Instruction
+  states:
+  - name: Fitos
+    test-code: |
+      ctx->op3 = 0x34;
+      ctx->opf = 0x0c4;
+      ctx->kind = TX_KIND_FPOP1;
+    text: |
+      While the instruction is an FiTOs instruction.
+  - name: Fitod
+    test-code: |
+      ctx->op3 = 0x34;
+      ctx->opf = 0x0c8;
+      ctx->kind = TX_KIND_FPOP1;
+    text: |
+      While the instruction is an FiTOd instruction.
+  - name: Fitoq
+    test-code: |
+      ctx->op3 = 0x34;
+      ctx->opf = 0x0cc;
+      ctx->kind = TX_KIND_FPOP1;
+    text: |
+      While the instruction is an FiTOq instruction.
+  - name: Fstoi
+    test-code: |
+      ctx->op3 = 0x34;
+      ctx->opf = 0x0d1;
+      ctx->kind = TX_KIND_FPOP1;
+    text: |
+      While the instruction is an FsTOi instruction.
+  - name: Fdtoi
+    test-code: |
+      ctx->op3 = 0x34;
+      ctx->opf = 0x0d2;
+      ctx->kind = TX_KIND_FPOP1;
+    text: |
+      While the instruction is an FdTOi instruction.
+  - name: Fqtoi
+    test-code: |
+      ctx->op3 = 0x34;
+      ctx->opf = 0x0d3;
+      ctx->kind = TX_KIND_FPOP1;
+    text: |
+      While the instruction is an FqTOi instruction.
+  - name: Fstod
+    test-code: |
+      ctx->op3 = 0x34;
+      ctx->opf = 0x0c9;
+      ctx->kind = TX_KIND_FPOP1;
+    text: |
+      While the instruction is an FsTOd instruction.
+  - name: Fstoq
+    test-code: |
+      ctx->op3 = 0x34;
+      ctx->opf = 0x0cd;
+      ctx->kind = TX_KIND_FPOP1;
+    text: |
+      While the instruction is an FsTOq instruction.
+  - name: Fdtos
+    test-code: |
+      ctx->op3 = 0x34;
+      ctx->opf = 0x0c6;
+      ctx->kind = TX_KIND_FPOP1;
+    text: |
+      While the instruction is an FdTOs instruction.
+  - name: Fdtoq
+    test-code: |
+      ctx->op3 = 0x34;
+      ctx->opf = 0x0ce;
+      ctx->kind = TX_KIND_FPOP1;
+    text: |
+      While the instruction is an FdTOq instruction.
+  - name: Fqtos
+    test-code: |
+      ctx->op3 = 0x34;
+      ctx->opf = 0x0c7;
+      ctx->kind = TX_KIND_FPOP1;
+    text: |
+      While the instruction is an FqTOs instruction.
+  - name: Fqtod
+    test-code: |
+      ctx->op3 = 0x34;
+      ctx->opf = 0x0cb;
+      ctx->kind = TX_KIND_FPOP1;
+    text: |
+      While the instruction is an FqTOd instruction.
+  - name: Fmovs
+    test-code: |
+      ctx->op3 = 0x34;
+      ctx->opf = 0x001;
+      ctx->kind = TX_KIND_FPOP1;
+    text: |
+      While the instruction is an FMOVs instruction.
+  - name: Fnegs
+    test-code: |
+      ctx->op3 = 0x34;
+      ctx->opf = 0x005;
+      ctx->kind = TX_KIND_FPOP1;
+    text: |
+      While the instruction is an FNEGs instruction.
+  - name: Fabss
+    test-code: |
+      ctx->op3 = 0x34;
+      ctx->opf = 0x009;
+      ctx->kind = TX_KIND_FPOP1;
+    text: |
+      While the instruction is an FABSs instruction.
+  - name: Fsqrts
+    test-code: |
+      ctx->op3 = 0x34;
+      ctx->opf = 0x029;
+      ctx->kind = TX_KIND_DIV;
+    text: |
+      While the instruction is an FSQRTs instruction.
+  - name: Fsqrtd
+    test-code: |
+      ctx->op3 = 0x34;
+      ctx->opf = 0x02a;
+      ctx->kind = TX_KIND_DIV;
+    text: |
+      While the instruction is an FSQRTd instruction.
+  - name: Fsqrtq
+    test-code: |
+      ctx->op3 = 0x34;
+      ctx->opf = 0x02b;
+      ctx->kind = TX_KIND_DIV;
+    text: |
+      While the instruction is an FSQRTq instruction.
+  - name: Fadds
+    test-code: |
+      ctx->op3 = 0x34;
+      ctx->opf = 0x041;
+      ctx->kind = TX_KIND_FPOP1;
+    text: |
+      While the instruction is an FADDs instruction.
+  - name: Faddd
+    test-code: |
+      ctx->op3 = 0x34;
+      ctx->opf = 0x042;
+      ctx->kind = TX_KIND_FPOP1;
+    text: |
+      While the instruction is an FADDd instruction.
+  - name: Faddq
+    test-code: |
+      ctx->op3 = 0x34;
+      ctx->opf = 0x043;
+      ctx->kind = TX_KIND_FPOP1;
+    text: |
+      While the instruction is an FADDq instruction.
+  - name: Fsubs
+    test-code: |
+      ctx->op3 = 0x34;
+      ctx->opf = 0x045;
+      ctx->kind = TX_KIND_FPOP1;
+    text: |
+      While the instruction is an FSUBs instruction.
+  - name: Fsubd
+    test-code: |
+      ctx->op3 = 0x34;
+      ctx->opf = 0x046;
+      ctx->kind = TX_KIND_FPOP1;
+    text: |
+      While the instruction is an FSUBd instruction.
+  - name: Fsubq
+    test-code: |
+      ctx->op3 = 0x34;
+      ctx->opf = 0x047;
+      ctx->kind = TX_KIND_FPOP1;
+    text: |
+      While the instruction is an FSUBq instruction.
+  - name: Fmuls
+    test-code: |
+      ctx->op3 = 0x34;
+      ctx->opf = 0x049;
+      ctx->kind = TX_KIND_FPOP1;
+    text: |
+      While the instruction is an FMULs instruction.
+  - name: Fmuld
+    test-code: |
+      ctx->op3 = 0x34;
+      ctx->opf = 0x04a;
+      ctx->kind = TX_KIND_FPOP1;
+    text: |
+      While the instruction is an FMULd instruction.
+  - name: Fmulq
+    test-code: |
+      ctx->op3 = 0x34;
+      ctx->opf = 0x04b;
+      ctx->kind = TX_KIND_FPOP1;
+    text: |
+      While the instruction is an FMULq instruction.
+  - name: Fdivs
+    test-code: |
+      ctx->op3 = 0x34;
+      ctx->opf = 0x04d;
+      ctx->kind = TX_KIND_DIV;
+    text: |
+      While the instruction is an FDIVs instruction.
+  - name: Fdivd
+    test-code: |
+      ctx->op3 = 0x34;
+      ctx->opf = 0x04e;
+      ctx->kind = TX_KIND_DIV;
+    text: |
+      While the instruction is an FDIVd instruction.
+  - name: Fdivq
+    test-code: |
+      ctx->op3 = 0x34;
+      ctx->opf = 0x04f;
+      ctx->kind = TX_KIND_DIV;
+    text: |
+      While the instruction is an FDIVq instruction.
+  - name: Fsmuld
+    test-code: |
+      ctx->op3 = 0x34;
+      ctx->opf = 0x069;
+      ctx->kind = TX_KIND_FPOP1;
+    text: |
+      While the instruction is an FsMULd instruction.
+  - name: Fdmulq
+    test-code: |
+      ctx->op3 = 0x34;
+      ctx->opf = 0x06e;
+      ctx->kind = TX_KIND_FPOP1;
+    text: |
+      While the instruction is an FdMULq instruction.
+  - name: Fcmps
+    test-code: |
+      ctx->op3 = 0x35;
+      ctx->opf = 0x051;
+      ctx->kind = TX_KIND_FPOP2;
+    text: |
+      While the instruction is an FCMPs instruction.
+  - name: Fcmpd
+    test-code: |
+      ctx->op3 = 0x35;
+      ctx->opf = 0x052;
+      ctx->kind = TX_KIND_FPOP2;
+    text: |
+      While the instruction is an FCMPd instruction.
+  - name: Fcmpq
+    test-code: |
+      ctx->op3 = 0x35;
+      ctx->opf = 0x053;
+      ctx->kind = TX_KIND_FPOP2;
+    text: |
+      While the instruction is an FCMPq instruction.
+  - name: Fcmpes
+    test-code: |
+      ctx->op3 = 0x35;
+      ctx->opf = 0x055;
+      ctx->kind = TX_KIND_FPOP2;
+    text: |
+      While the instruction is an FCMPEs instruction.
+  - name: Fcmped
+    test-code: |
+      ctx->op3 = 0x35;
+      ctx->opf = 0x056;
+      ctx->kind = TX_KIND_FPOP2;
+    text: |
+      While the instruction is an FCMPEd instruction.
+  - name: Fcmpeq
+    test-code: |
+      ctx->op3 = 0x35;
+      ctx->opf = 0x057;
+      ctx->kind = TX_KIND_FPOP2;
+    text: |
+      While the instruction is an FCMPEq instruction.
+  - name: Fpop1Undefined
+    test-code: |
+      ctx->op3 = 0x34;
+      ctx->opf = 0x0ff;
+      ctx->kind = TX_KIND_FPOP1;
+    text: |
+      While the instruction is an FPop1 instruction with an undefined opf field.
+  - name: Fpop2Undefined
+    test-code: |
+      ctx->op3 = 0x35;
+      ctx->opf = 0x0ff;
+      ctx->kind = TX_KIND_FPOP2;
+    text: |
+      While the instruction is an FPop2 instruction with an undefined opf field.
+  test-epilogue: null
+  test-prologue: null
+rationale: |
+  Dimension Instruction covers the floating-point operations of tables F-5 and
+  F-6 of SPARC V8, 40 states.
+
+  Section B.33 of SPARC V8 states the operand type of each floating-point
+  operation. A single operand is one register. A double operand is two registers
+  which start at an even register. A quad operand is four registers which start
+  at a multiple of four. An undefined opf field causes an fp_exception trap, so
+  the checker treats the instruction as a dependency on every register.
+
+  The test observes the kind through the incorrect annulation erratum and through
+  the missing FDIV/FSQRT result erratum. It observes the width of an operand
+  through the register dependencies of the missing FDIV/FSQRT result erratum. An
+  operand at register 17 overlaps a destination at register 17. It overlaps a
+  destination at register 16 only as a double or quad operand. An operand at
+  register 18 overlaps a destination at register 17 only as a quad operand.
+references: []
+requirement-type: functional
+skip-reasons: {}
+test-action: |
+  TxProbeFpop( ctx->op3, ctx->opf, ctx->kind, &ctx->probe );
+test-brief: null
+test-cleanup: null
+test-context:
+- brief: |
+    This member contains the op3 field of the instruction.
+  description: null
+  member: |
+    uint32_t op3
+- brief: |
+    This member contains the opf field of the instruction.
+  description: null
+  member: |
+    uint32_t opf
+- brief: |
+    This member contains the kind of the instruction which selects the arrangement
+    of the probe.
+  description: null
+  member: |
+    TxFpopKind kind
+- brief: |
+    This member contains the result of the probe of the instruction.
+  description: null
+  member: |
+    TxFpopProbe probe
+test-context-support: null
+test-description: null
+test-header: null
+test-includes: []
+test-local-includes:
+- nopinion.h
+- tx-support.h
+test-prepare: null
+test-setup: null
+test-stop: null
+test-support: null
+test-target: nopinion/tests/tc-decode-fpop.c
+test-teardown: null
+text: |
+  ${.:text-template}
+transition-map:
+- enabled-by: true
+  post-conditions:
+    Kind: Fpop1
+    Rs1: None
+    Rs2: Single
+    Rd: Single
+  pre-conditions:
+    Instruction:
+    - Fitos
+- enabled-by: true
+  post-conditions:
+    Kind: Fpop1
+    Rs1: None
+    Rs2: Single
+    Rd: Double
+  pre-conditions:
+    Instruction:
+    - Fitod
+- enabled-by: true
+  post-conditions:
+    Kind: Fpop1
+    Rs1: None
+    Rs2: Single
+    Rd: Quad
+  pre-conditions:
+    Instruction:
+    - Fitoq
+- enabled-by: true
+  post-conditions:
+    Kind: Fpop1
+    Rs1: None
+    Rs2: Single
+    Rd: Single
+  pre-conditions:
+    Instruction:
+    - Fstoi
+- enabled-by: true
+  post-conditions:
+    Kind: Fpop1
+    Rs1: None
+    Rs2: Double
+    Rd: Single
+  pre-conditions:
+    Instruction:
+    - Fdtoi
+- enabled-by: true
+  post-conditions:
+    Kind: Fpop1
+    Rs1: None
+    Rs2: Quad
+    Rd: Single
+  pre-conditions:
+    Instruction:
+    - Fqtoi
+- enabled-by: true
+  post-conditions:
+    Kind: Fpop1
+    Rs1: None
+    Rs2: Single
+    Rd: Double
+  pre-conditions:
+    Instruction:
+    - Fstod
+- enabled-by: true
+  post-conditions:
+    Kind: Fpop1
+    Rs1: None
+    Rs2: Single
+    Rd: Quad
+  pre-conditions:
+    Instruction:
+    - Fstoq
+- enabled-by: true
+  post-conditions:
+    Kind: Fpop1
+    Rs1: None
+    Rs2: Double
+    Rd: Single
+  pre-conditions:
+    Instruction:
+    - Fdtos
+- enabled-by: true
+  post-conditions:
+    Kind: Fpop1
+    Rs1: None
+    Rs2: Double
+    Rd: Quad
+  pre-conditions:
+    Instruction:
+    - Fdtoq
+- enabled-by: true
+  post-conditions:
+    Kind: Fpop1
+    Rs1: None
+    Rs2: Quad
+    Rd: Single
+  pre-conditions:
+    Instruction:
+    - Fqtos
+- enabled-by: true
+  post-conditions:
+    Kind: Fpop1
+    Rs1: None
+    Rs2: Quad
+    Rd: Double
+  pre-conditions:
+    Instruction:
+    - Fqtod
+- enabled-by: true
+  post-conditions:
+    Kind: Fpop1
+    Rs1: None
+    Rs2: Single
+    Rd: Single
+  pre-conditions:
+    Instruction:
+    - Fmovs
+- enabled-by: true
+  post-conditions:
+    Kind: Fpop1
+    Rs1: None
+    Rs2: Single
+    Rd: Single
+  pre-conditions:
+    Instruction:
+    - Fnegs
+- enabled-by: true
+  post-conditions:
+    Kind: Fpop1
+    Rs1: None
+    Rs2: Single
+    Rd: Single
+  pre-conditions:
+    Instruction:
+    - Fabss
+- enabled-by: true
+  post-conditions:
+    Kind: Div
+    Rs1: None
+    Rs2: Single
+    Rd: Single
+  pre-conditions:
+    Instruction:
+    - Fsqrts
+- enabled-by: true
+  post-conditions:
+    Kind: Div
+    Rs1: None
+    Rs2: Double
+    Rd: Double
+  pre-conditions:
+    Instruction:
+    - Fsqrtd
+- enabled-by: true
+  post-conditions:
+    Kind: Div
+    Rs1: None
+    Rs2: Quad
+    Rd: Quad
+  pre-conditions:
+    Instruction:
+    - Fsqrtq
+- enabled-by: true
+  post-conditions:
+    Kind: Fpop1
+    Rs1: Single
+    Rs2: Single
+    Rd: Single
+  pre-conditions:
+    Instruction:
+    - Fadds
+- enabled-by: true
+  post-conditions:
+    Kind: Fpop1
+    Rs1: Double
+    Rs2: Double
+    Rd: Double
+  pre-conditions:
+    Instruction:
+    - Faddd
+- enabled-by: true
+  post-conditions:
+    Kind: Fpop1
+    Rs1: Quad
+    Rs2: Quad
+    Rd: Quad
+  pre-conditions:
+    Instruction:
+    - Faddq
+- enabled-by: true
+  post-conditions:
+    Kind: Fpop1
+    Rs1: Single
+    Rs2: Single
+    Rd: Single
+  pre-conditions:
+    Instruction:
+    - Fsubs
+- enabled-by: true
+  post-conditions:
+    Kind: Fpop1
+    Rs1: Double
+    Rs2: Double
+    Rd: Double
+  pre-conditions:
+    Instruction:
+    - Fsubd
+- enabled-by: true
+  post-conditions:
+    Kind: Fpop1
+    Rs1: Quad
+    Rs2: Quad
+    Rd: Quad
+  pre-conditions:
+    Instruction:
+    - Fsubq
+- enabled-by: true
+  post-conditions:
+    Kind: Fpop1
+    Rs1: Single
+    Rs2: Single
+    Rd: Single
+  pre-conditions:
+    Instruction:
+    - Fmuls
+- enabled-by: true
+  post-conditions:
+    Kind: Fpop1
+    Rs1: Double
+    Rs2: Double
+    Rd: Double
+  pre-conditions:
+    Instruction:
+    - Fmuld
+- enabled-by: true
+  post-conditions:
+    Kind: Fpop1
+    Rs1: Quad
+    Rs2: Quad
+    Rd: Quad
+  pre-conditions:
+    Instruction:
+    - Fmulq
+- enabled-by: true
+  post-conditions:
+    Kind: Div
+    Rs1: Single
+    Rs2: Single
+    Rd: Single
+  pre-conditions:
+    Instruction:
+    - Fdivs
+- enabled-by: true
+  post-conditions:
+    Kind: Div
+    Rs1: Double
+    Rs2: Double
+    Rd: Double
+  pre-conditions:
+    Instruction:
+    - Fdivd
+- enabled-by: true
+  post-conditions:
+    Kind: Div
+    Rs1: Quad
+    Rs2: Quad
+    Rd: Quad
+  pre-conditions:
+    Instruction:
+    - Fdivq
+- enabled-by: true
+  post-conditions:
+    Kind: Fpop1
+    Rs1: Single
+    Rs2: Single
+    Rd: Double
+  pre-conditions:
+    Instruction:
+    - Fsmuld
+- enabled-by: true
+  post-conditions:
+    Kind: Fpop1
+    Rs1: Double
+    Rs2: Double
+    Rd: Quad
+  pre-conditions:
+    Instruction:
+    - Fdmulq
+- enabled-by: true
+  post-conditions:
+    Kind: Fpop2
+    Rs1: Single
+    Rs2: Single
+    Rd: None
+  pre-conditions:
+    Instruction:
+    - Fcmps
+- enabled-by: true
+  post-conditions:
+    Kind: Fpop2
+    Rs1: Double
+    Rs2: Double
+    Rd: None
+  pre-conditions:
+    Instruction:
+    - Fcmpd
+- enabled-by: true
+  post-conditions:
+    Kind: Fpop2
+    Rs1: Quad
+    Rs2: Quad
+    Rd: None
+  pre-conditions:
+    Instruction:
+    - Fcmpq
+- enabled-by: true
+  post-conditions:
+    Kind: Fpop2
+    Rs1: Single
+    Rs2: Single
+    Rd: None
+  pre-conditions:
+    Instruction:
+    - Fcmpes
+- enabled-by: true
+  post-conditions:
+    Kind: Fpop2
+    Rs1: Double
+    Rs2: Double
+    Rd: None
+  pre-conditions:
+    Instruction:
+    - Fcmped
+- enabled-by: true
+  post-conditions:
+    Kind: Fpop2
+    Rs1: Quad
+    Rs2: Quad
+    Rd: None
+  pre-conditions:
+    Instruction:
+    - Fcmpeq
+- enabled-by: true
+  post-conditions:
+    Kind: Fpop1
+    Rs1: Any
+    Rs2: Any
+    Rd: Any
+  pre-conditions:
+    Instruction:
+    - Fpop1Undefined
+- enabled-by: true
+  post-conditions:
+    Kind: Fpop2
+    Rs1: Any
+    Rs2: Any
+    Rd: Any
+  pre-conditions:
+    Instruction:
+    - Fpop2Undefined
+type: requirement

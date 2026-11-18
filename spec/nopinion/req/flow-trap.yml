@@ -1,0 +1,149 @@
+SPDX-License-Identifier: CC-BY-SA-4.0 OR BSD-2-Clause
+copyrights:
+- Copyright (C) 2026 embedded brains GmbH & Co. KG
+enabled-by: true
+functional-type: action
+links:
+- role: requirement-refinement
+  uid: flow
+post-conditions:
+- name: Finding
+  states:
+  - name: None
+    test-code: |
+      T_eq_int( TxCountAt( ctx->report, 0, "TN-0009" ), 0 );
+    text: |
+      The errata checker shall report no ${../glossary/finding:/term} for the first
+      instruction.
+  - name: Definite
+    test-code: |
+      T_eq_int( TxCountAt( ctx->report, 0, "TN-0009" ), 1 );
+      T_false( TxIsPossibleAt( ctx->report, 0, "TN-0009" ) );
+    text: |
+      The errata checker shall report one ${../glossary/definite-finding:/term} for
+      the first instruction.
+  - name: Possible
+    test-code: |
+      T_eq_int( TxCountAt( ctx->report, 0, "TN-0009" ), 1 );
+      T_true( TxIsPossibleAt( ctx->report, 0, "TN-0009" ) );
+    text: |
+      The errata checker shall report one ${../glossary/possible-finding:/term} for
+      the first instruction.
+  test-epilogue: null
+  test-prologue: null
+pre-conditions:
+- name: Second
+  states:
+  - name: TrapAlways
+    test-code: |
+      ctx->second = TxTa();
+    text: |
+      While the second instruction is a trap always instruction.
+  - name: TrapCond
+    test-code: |
+      ctx->second = TxFormat3Imm( 2, 0x3a, 9, TX_G0, 0 );
+    text: |
+      While the second instruction is a conditional trap instruction.
+  - name: Other
+    test-code: |
+      ctx->second = TxAdd();
+    text: |
+      While the second instruction transfers no control.
+  test-epilogue: null
+  test-prologue: null
+- name: Indirect
+  states:
+  - name: 'Yes'
+    test-code: |
+      TxSetIncludeIndirect( true );
+    text: |
+      While the option -i is given.
+  - name: 'No'
+    test-code: |
+      TxSetIncludeIndirect( false );
+    text: |
+      While the option -i is not given.
+  test-epilogue: null
+  test-prologue: null
+rationale: |
+  Dimension Second covers the trap instructions of SPARC V8 and an instruction
+  which transfers no control, 3 states.
+
+  Dimension Indirect covers the options of the errata checker, 2 states.
+
+  The test checks a store of word size, the second instruction and a store of
+  word size with the stale cache entry erratum. A trap always instruction
+  transfers control to its trap handler, so the flow of execution ends there
+  unless the option -i is given. The option makes the instruction after the trap
+  an ${../glossary/unknown-instruction:/term}. A conditional trap may not trap,
+  so the flow of execution continues with the next instruction.
+references: []
+requirement-type: functional
+skip-reasons: {}
+test-action: |
+  TxAppend( &ctx->image, TxSt() );
+  TxAppend( &ctx->image, ctx->second );
+  TxAppend( &ctx->image, TxSt() );
+  TxAppend( &ctx->image, TxNop() );
+  ctx->report = TxCheck( &ctx->image, NOTE_0009 );
+test-brief: null
+test-cleanup: |
+  TxSetIncludeIndirect( false );
+test-context:
+- brief: |
+    This member contains the image of the ELF file to check.
+  description: null
+  member: |
+    TxImage image
+- brief: |
+    This member contains the second instruction.
+  description: null
+  member: |
+    uint32_t second
+- brief: |
+    This member references the report of the errata checker.
+  description: null
+  member: |
+    const char *report
+test-context-support: null
+test-description: null
+test-header: null
+test-includes: []
+test-local-includes:
+- nopinion.h
+- tx-support.h
+test-prepare: |
+  TxImageInit( &ctx->image );
+test-setup: null
+test-stop: null
+test-support: null
+test-target: nopinion/tests/tc-flow-trap.c
+test-teardown: null
+text: |
+  ${.:text-template}
+transition-map:
+- enabled-by: true
+  post-conditions:
+    Finding: None
+  pre-conditions:
+    Second:
+    - TrapAlways
+    Indirect:
+    - 'No'
+- enabled-by: true
+  post-conditions:
+    Finding: Possible
+  pre-conditions:
+    Second:
+    - TrapAlways
+    Indirect:
+    - 'Yes'
+- enabled-by: true
+  post-conditions:
+    Finding: Definite
+  pre-conditions:
+    Second:
+    - TrapCond
+    - Other
+    Indirect: all
+type: requirement

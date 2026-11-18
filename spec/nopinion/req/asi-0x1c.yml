@@ -1,0 +1,21 @@
+SPDX-License-Identifier: CC-BY-SA-4.0 OR BSD-2-Clause
+copyrights:
+- Copyright (C) 2026 embedded brains GmbH & Co. KG
+enabled-by: true
+functional-type: function
+links:
+- role: requirement-refinement
+  uid: group
+- location: section 1.7.19
+  role: reference
+  uid: /ref/soc/gaisler/gr712rc/gr712rc-um-2-17
+- location: section 43.2.5
+  role: reference
+  uid: /ref/soc/gaisler/gr740/gr740-um-ds-2-10
+rationale: null
+references: []
+requirement-type: functional
+text: |
+  The errata checker shall report a ${../glossary/finding:/term} for each
+  instruction which stores with the address space identifier 0x1C.
+type: requirement

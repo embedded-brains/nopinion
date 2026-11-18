@@ -1,0 +1,136 @@
+SPDX-License-Identifier: CC-BY-SA-4.0 OR BSD-2-Clause
+copyrights:
+- Copyright (C) 2026 embedded brains GmbH & Co. KG
+enabled-by: true
+functional-type: action
+links:
+- role: requirement-refinement
+  uid: cli
+post-conditions:
+- name: Status
+  states:
+  - name: Success
+    test-code: |
+      T_eq_int( ctx->status, 0 );
+    text: |
+      The exit status of the program shall be 0.
+  - name: Error
+    test-code: |
+      T_eq_int( ctx->status, 2 );
+    text: |
+      The exit status of the program shall be 2.
+  test-epilogue: null
+  test-prologue: null
+- name: Output
+  states:
+  - name: Usage
+    test-code: |
+      T_eq_int( strncmp( ctx->out, "usage: nopinion ", 16 ), 0 );
+    text: |
+      The program shall write the usage text to its standard output.
+  - name: Empty
+    test-code: |
+      T_eq_str( ctx->out, "" );
+    text: |
+      The program shall write nothing to its standard output.
+  test-epilogue: null
+  test-prologue: null
+pre-conditions:
+- name: Option
+  states:
+  - name: Help
+    test-code: |
+      ctx->option = "-h";
+    text: |
+      While the option -h is given.
+  - name: Unknown
+    test-code: |
+      ctx->option = "-x";
+    text: |
+      While an unknown option is given.
+  test-epilogue: null
+  test-prologue: null
+rationale: |
+  Dimension Option covers the outcomes of the options which need no file, 2
+  states.
+
+  The program nopinion passes its arguments, its standard output and its standard
+  error to the errata checker. The test runs the program which the environment
+  variable NOPINION names. The program writes the usage text for the option -h to
+  the standard output and for an unknown option to the standard error.
+references: []
+requirement-type: functional
+skip-reasons: {}
+test-action: |
+  const char *program = getenv( "NOPINION" );
+  char        command[ 512 ];
+  FILE       *f;
+  size_t      n;
+  int         status;
+
+  T_assert_not_null( program );
+  (void) snprintf(
+    command,
+    sizeof( command ),
+    "%s %s 2>/dev/null",
+    program,
+    ctx->option
+  );
+  f = popen( command, "r" );
+  T_assert_not_null( f );
+  n = fread( ctx->out, 1, sizeof( ctx->out ) - 1, f );
+  ctx->out[ n ] = '\0';
+  status = pclose( f );
+  T_assert_true( WIFEXITED( status ) );
+  ctx->status = WEXITSTATUS( status );
+test-brief: null
+test-cleanup: null
+test-context:
+- brief: |
+    This member contains the option.
+  description: null
+  member: |
+    const char *option
+- brief: |
+    This member contains the standard output of the program.
+  description: null
+  member: |
+    char out[ 2048 ]
+- brief: |
+    This member contains the exit status of the program.
+  description: null
+  member: |
+    int status
+test-context-support: null
+test-description: null
+test-header: null
+test-includes:
+- stdio.h
+- stdlib.h
+- string.h
+- sys/wait.h
+test-local-includes: []
+test-prepare: null
+test-setup: null
+test-stop: null
+test-support: null
+test-target: nopinion/tests/tc-program.c
+test-teardown: null
+text: |
+  ${.:text-template}
+transition-map:
+- enabled-by: true
+  post-conditions:
+    Status: Success
+    Output: Usage
+  pre-conditions:
+    Option:
+    - Help
+- enabled-by: true
+  post-conditions:
+    Status: Error
+    Output: Empty
+  pre-conditions:
+    Option:
+    - Unknown
+type: requirement

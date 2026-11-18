@@ -1,0 +1,389 @@
+SPDX-License-Identifier: CC-BY-SA-4.0 OR BSD-2-Clause
+copyrights:
+- Copyright (C) 2026 embedded brains GmbH & Co. KG
+enabled-by: true
+functional-type: action
+links:
+- role: requirement-refinement
+  uid: tn-0018
+post-conditions:
+- name: Finding
+  states:
+  - name: None
+    test-code: |
+      T_eq_int( TxCountAt( ctx->report, 4, "trap-returns-to-jmpl" ), 0 );
+    text: |
+      The errata checker shall report no ${../glossary/finding:/term} of a trap
+      instruction which returns to a JMPL instruction.
+  - name: Definite
+    test-code: |
+      T_eq_int( TxCountAt( ctx->report, 4, "trap-returns-to-jmpl" ), 1 );
+      T_false( TxIsPossibleAt( ctx->report, 4, "trap-returns-to-jmpl" ) );
+    text: |
+      The errata checker shall report one ${../glossary/definite-finding:/term} of
+      a trap instruction which returns to a JMPL instruction for the second
+      instruction.
+  - name: Possible
+    test-code: |
+      T_eq_int( TxCountAt( ctx->report, 4, "trap-returns-to-jmpl" ), 1 );
+      T_true( TxIsPossibleAt( ctx->report, 4, "trap-returns-to-jmpl" ) );
+    text: |
+      The errata checker shall report one ${../glossary/possible-finding:/term} of
+      a trap instruction which returns to a JMPL instruction for the second
+      instruction.
+  test-epilogue: null
+  test-prologue: null
+pre-conditions:
+- name: Trap
+  states:
+  - name: Always
+    test-code: |
+      ctx->trap = TxTicc( 8 );
+    text: |
+      While the second instruction of the ${../glossary/code-section:/term} is a
+      trap always instruction.
+  - name: Conditional
+    test-code: |
+      ctx->trap = TxTicc( 9 );
+    text: |
+      While the second instruction of the ${../glossary/code-section:/term} is a
+      trap instruction with a condition other than always and never.
+  - name: Never
+    test-code: |
+      ctx->trap = TxTicc( 0 );
+    text: |
+      While the second instruction of the ${../glossary/code-section:/term} is a
+      trap never instruction.
+  - name: Other
+    test-code: |
+      ctx->trap = TxAdd();
+    text: |
+      While the second instruction of the ${../glossary/code-section:/term} is no
+      trap instruction and transfers no control.
+  test-epilogue: null
+  test-prologue: null
+- name: Slot
+  states:
+  - name: None
+    test-code: |
+      ctx->first = TxNop();
+    text: |
+      While the first instruction of the ${../glossary/code-section:/term}
+      transfers no control.
+  - name: BranchAlways
+    test-code: |
+      ctx->first = TxBicc( 8, false, 3 );
+    text: |
+      While the first instruction of the ${../glossary/code-section:/term} is a
+      branch always instruction without annulment to the fourth instruction.
+  - name: BranchConditional
+    test-code: |
+      ctx->first = TxBicc( 9, false, 3 );
+    text: |
+      While the first instruction of the ${../glossary/code-section:/term} is a
+      conditional branch instruction without annulment to the fourth instruction.
+  - name: Jmpl
+    test-code: |
+      ctx->first = TxJmpl();
+    text: |
+      While the first instruction of the ${../glossary/code-section:/term} is a
+      JMPL instruction.
+  - name: CallRelocated
+    test-code: |
+      ctx->first = TxCall( 3 );
+      TxAddRelocation( &ctx->image, 0 );
+    text: |
+      While the first instruction of the ${../glossary/code-section:/term} is a CALL
+      instruction with a relocation.
+  test-epilogue: null
+  test-prologue: null
+- name: Next
+  states:
+  - name: Jmpl
+    test-code: |
+      ctx->next = TxJmpl();
+    text: |
+      While the third and the fourth instruction of the
+      ${../glossary/code-section:/term} are JMPL instructions.
+  - name: Other
+    test-code: |
+      ctx->next = TxAdd();
+    text: |
+      While the third and the fourth instruction of the
+      ${../glossary/code-section:/term} transfer no control.
+  - name: Absent
+    test-code: |
+      ctx->absent = true;
+    text: |
+      While the ${../glossary/code-section:/term} ends after the second
+      instruction.
+  test-epilogue: null
+  test-prologue: null
+- name: Indirect
+  states:
+  - name: Excluded
+    test-code: |
+      TxSetIncludeIndirect( false );
+    text: |
+      While the option -i is not given.
+  - name: Included
+    test-code: |
+      TxSetIncludeIndirect( true );
+    text: |
+      While the option -i is given.
+  test-epilogue: null
+  test-prologue: null
+rationale: |
+  Dimension Trap covers the conditions of the Ticc instruction and the other
+  instructions, 4 states.
+
+  Dimension Slot covers the delay slot of each kind of control transfer and no
+  delay slot, 5 states.
+
+  Dimension Next covers the JMPL instruction, the other instructions and the end
+  of the ${../glossary/code-section:/term}, 3 states.
+
+  Dimension Indirect covers the option -i, 2 states.
+
+  Section 4.5.1 of the technical note states that a software trap returns to the
+  instruction after the trap instruction. That instruction is the instruction at
+  nPC of the trap instruction, which a delay slot decides. A JMPL instruction
+  there makes every return of the trap return to a JMPL instruction. A trap never
+  instruction does not trap. The target of a JMPL instruction and of a relocated
+  CALL instruction is unknown. The instruction after the end of the
+  ${../glossary/code-section:/term} is an ${../glossary/unknown-instruction:/term}.
+  The flow requirements state how the option -i makes the target of a JMPL
+  instruction an ${../glossary/unknown-instruction:/term}.
+references: []
+requirement-type: functional
+skip-reasons: {}
+test-action: |
+  TxAppend( &ctx->image, ctx->first );
+  TxAppend( &ctx->image, ctx->trap );
+
+  if ( !ctx->absent ) {
+    TxAppend( &ctx->image, ctx->next );
+    TxAppend( &ctx->image, ctx->next );
+  }
+
+  ctx->report = TxCheck( &ctx->image, NOTE_0018 );
+test-brief: null
+test-cleanup: |
+  TxSetIncludeIndirect( false );
+test-context:
+- brief: |
+    This member contains the image of the ELF file to check.
+  description: null
+  member: |
+    TxImage image
+- brief: |
+    This member contains the first instruction.
+  description: null
+  member: |
+    uint32_t first
+- brief: |
+    This member contains the second instruction.
+  description: null
+  member: |
+    uint32_t trap
+- brief: |
+    This member contains the third and the fourth instruction.
+  description: null
+  member: |
+    uint32_t next
+- brief: |
+    This member is true, if the code section ends after the second instruction.
+  description: null
+  member: |
+    bool absent
+- brief: |
+    This member references the report of the errata checker.
+  description: null
+  member: |
+    const char *report
+test-context-support: null
+test-description: null
+test-header: null
+test-includes: []
+test-local-includes:
+- nopinion.h
+- tx-support.h
+test-prepare: |
+  TxImageInit( &ctx->image );
+  ctx->absent = false;
+test-setup: null
+test-stop: null
+test-support: null
+test-target: nopinion/tests/tc-check-tn-0018-trap.c
+test-teardown: null
+text: |
+  ${.:text-template}
+transition-map:
+- enabled-by: true
+  post-conditions:
+    Finding: Definite
+  pre-conditions:
+    Trap:
+    - Always
+    - Conditional
+    Slot:
+    - None
+    - BranchAlways
+    - BranchConditional
+    Next:
+    - Jmpl
+    Indirect: all
+- enabled-by: true
+  post-conditions:
+    Finding: None
+  pre-conditions:
+    Trap: all
+    Slot:
+    - None
+    - BranchAlways
+    - BranchConditional
+    - Jmpl
+    Next:
+    - Other
+    Indirect:
+    - Excluded
+- enabled-by: true
+  post-conditions:
+    Finding: None
+  pre-conditions:
+    Trap: all
+    Slot:
+    - None
+    - BranchAlways
+    - BranchConditional
+    Next:
+    - Other
+    Indirect:
+    - Included
+- enabled-by: true
+  post-conditions:
+    Finding: None
+  pre-conditions:
+    Trap: all
+    Slot:
+    - Jmpl
+    Next:
+    - Jmpl
+    - Absent
+    Indirect:
+    - Excluded
+- enabled-by: true
+  post-conditions:
+    Finding: None
+  pre-conditions:
+    Trap:
+    - Never
+    - Other
+    Slot:
+    - None
+    - BranchAlways
+    - BranchConditional
+    - CallRelocated
+    Next:
+    - Jmpl
+    - Absent
+    Indirect:
+    - Excluded
+- enabled-by: true
+  post-conditions:
+    Finding: None
+  pre-conditions:
+    Trap:
+    - Never
+    - Other
+    Slot: all
+    Next:
+    - Jmpl
+    - Absent
+    Indirect:
+    - Included
+- enabled-by: true
+  post-conditions:
+    Finding: None
+  pre-conditions:
+    Trap:
+    - Never
+    - Other
+    Slot:
+    - CallRelocated
+    Next:
+    - Other
+    Indirect:
+    - Excluded
+- enabled-by: true
+  post-conditions:
+    Finding: None
+  pre-conditions:
+    Trap:
+    - Never
+    - Other
+    Slot:
+    - Jmpl
+    - CallRelocated
+    Next:
+    - Other
+    Indirect:
+    - Included
+- enabled-by: true
+  post-conditions:
+    Finding: Possible
+  pre-conditions:
+    Trap:
+    - Always
+    - Conditional
+    Slot:
+    - None
+    - BranchAlways
+    - BranchConditional
+    - CallRelocated
+    Next:
+    - Absent
+    Indirect:
+    - Excluded
+- enabled-by: true
+  post-conditions:
+    Finding: Possible
+  pre-conditions:
+    Trap:
+    - Always
+    - Conditional
+    Slot: all
+    Next:
+    - Absent
+    Indirect:
+    - Included
+- enabled-by: true
+  post-conditions:
+    Finding: Possible
+  pre-conditions:
+    Trap:
+    - Always
+    - Conditional
+    Slot:
+    - CallRelocated
+    Next:
+    - Jmpl
+    - Other
+    Indirect:
+    - Excluded
+- enabled-by: true
+  post-conditions:
+    Finding: Possible
+  pre-conditions:
+    Trap:
+    - Always
+    - Conditional
+    Slot:
+    - Jmpl
+    - CallRelocated
+    Next:
+    - Jmpl
+    - Other
+    Indirect:
+    - Included
+type: requirement

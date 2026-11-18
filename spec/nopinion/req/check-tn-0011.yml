@@ -1,0 +1,474 @@
+SPDX-License-Identifier: CC-BY-SA-4.0 OR BSD-2-Clause
+copyrights:
+- Copyright (C) 2026 embedded brains GmbH & Co. KG
+enabled-by: true
+functional-type: action
+links:
+- role: requirement-refinement
+  uid: tn-0011
+post-conditions:
+- name: DelaySlot
+  states:
+  - name: None
+    test-code: |
+      T_eq_int( TxCountAt( ctx->report, ctx->offset, "atomic-in-delay-slot" ), 0 );
+    text: |
+      The errata checker shall report no ${../glossary/finding:/term} of an atomic
+      instruction in a delay slot.
+  - name: Definite
+    test-code: |
+      T_eq_int( TxCountAt( ctx->report, ctx->offset, "atomic-in-delay-slot" ), 1 );
+      T_false(
+        TxIsPossibleAt( ctx->report, ctx->offset, "atomic-in-delay-slot" )
+      );
+    text: |
+      The errata checker shall report one ${../glossary/definite-finding:/term} of an
+      atomic instruction in a delay slot for the instruction.
+  test-epilogue: null
+  test-prologue: null
+- name: Alignment
+  states:
+  - name: None
+    test-code: |
+      T_eq_int( TxCountAt( ctx->report, ctx->offset, "atomic-not-aligned" ), 0 );
+    text: |
+      The errata checker shall report no ${../glossary/finding:/term} of an atomic
+      instruction which does not start a 16-byte block.
+  - name: Definite
+    test-code: |
+      T_eq_int( TxCountAt( ctx->report, ctx->offset, "atomic-not-aligned" ), 1 );
+      T_false( TxIsPossibleAt( ctx->report, ctx->offset, "atomic-not-aligned" ) );
+    text: |
+      The errata checker shall report one ${../glossary/definite-finding:/term} of an
+      atomic instruction which does not start a 16-byte block for the instruction.
+  - name: Possible
+    test-code: |
+      T_eq_int( TxCountAt( ctx->report, ctx->offset, "atomic-not-aligned" ), 1 );
+      T_true( TxIsPossibleAt( ctx->report, ctx->offset, "atomic-not-aligned" ) );
+    text: |
+      The errata checker shall report one ${../glossary/possible-finding:/term} of an
+      atomic instruction which does not start a 16-byte block for the instruction.
+  test-epilogue: null
+  test-prologue: null
+pre-conditions:
+- name: Instruction
+  states:
+  - name: Swap
+    test-code: |
+      ctx->instruction = TxSwap();
+    text: |
+      While the instruction is a SWAP instruction.
+  - name: Ldstub
+    test-code: |
+      ctx->instruction = TxLdstub();
+    text: |
+      While the instruction is an LDSTUB instruction.
+  - name: Casa
+    test-code: |
+      ctx->instruction = TxCasa();
+    text: |
+      While the instruction is a CASA instruction.
+  - name: Other
+    test-code: |
+      ctx->instruction = TxLd();
+    text: |
+      While the instruction is no atomic instruction and transfers no control.
+  test-epilogue: null
+  test-prologue: null
+- name: Previous
+  states:
+  - name: Bicc
+    test-code: |
+      ctx->previous = TxBicc( 1, false, 2 );
+    text: |
+      While the instruction before the instruction is a branch on integer condition
+      codes.
+  - name: FBfcc
+    test-code: |
+      ctx->previous = TxFbfcc( false, 2 );
+    text: |
+      While the instruction before the instruction is a branch on floating-point
+      condition codes.
+  - name: CBccc
+    test-code: |
+      ctx->previous = TxCbccc( 2 );
+    text: |
+      While the instruction before the instruction is a branch on coprocessor
+      condition codes.
+  - name: Call
+    test-code: |
+      ctx->previous = TxCall( 2 );
+    text: |
+      While the instruction before the instruction is a CALL instruction.
+  - name: Jmpl
+    test-code: |
+      ctx->previous = TxJmpl();
+    text: |
+      While the instruction before the instruction is a JMPL instruction.
+  - name: Other
+    test-code: |
+      ctx->previous = TxAdd();
+    text: |
+      While the instruction before the instruction transfers no control.
+  - name: None
+    test-code: |
+      ctx->first = true;
+    text: |
+      While the instruction is the first instruction of the
+      ${../glossary/code-section:/term}.
+  test-epilogue: null
+  test-prologue: null
+- name: Address
+  states:
+  - name: Aligned
+    test-code: |
+      ctx->unaligned = false;
+    text: |
+      While the address of the instruction is an integral multiple of 16.
+  - name: Unaligned
+    test-code: |
+      ctx->unaligned = true;
+    text: |
+      While the address of the instruction is no integral multiple of 16.
+  test-epilogue: null
+  test-prologue: null
+- name: File
+  states:
+  - name: Executable
+    test-code: |
+      ctx->image.executable = true;
+      ctx->image.address = 0x40000000;
+    text: |
+      While the ELF file is an executable.
+  - name: RelocatableAligned
+    test-code: |
+      ctx->image.alignment = 16;
+    text: |
+      While the ELF file is relocatable, while the alignment of the
+      ${../glossary/code-section:/term} is an integral multiple of 16.
+  - name: RelocatableUnaligned
+    test-code: |
+      ctx->image.alignment = 8;
+    text: |
+      While the ELF file is relocatable, while the alignment of the
+      ${../glossary/code-section:/term} is less than 16.
+  test-epilogue: null
+  test-prologue: null
+rationale: |
+  Dimension Instruction covers the instructions of SPARC V8 and of the LEON
+  processors which transfer no control, 4 states.
+
+  Dimension Previous covers the instructions of SPARC V8 and the start of the
+  ${../glossary/code-section:/term}, 7 states.
+
+  Dimension Address covers every address of an instruction, 2 states.
+
+  Dimension File covers the ELF file types which the errata checker accepts and
+  the alignment of the ${../glossary/code-section:/term}, 3 states.
+
+  Section 3.1 of the technical note places an atomic instruction at an address
+  which is an integral multiple of 16. A relocatable file fixes that address only
+  for a ${../glossary/code-section:/term} with an alignment of at least 16. The
+  address of an executable is final.
+
+  Section 2 of the technical note lists the branches on integer and on
+  floating-point condition codes and CALL as PC-relative control-transfer
+  instructions. Section B.23 of SPARC V8 defines the branch on coprocessor
+  condition codes as one more such instruction with a delay slot.
+
+  The executable starts the ${../glossary/code-section:/term} at 0x40000000. The
+  test places the instruction at offset 16 or 24, so a previous instruction
+  exists. The first instruction of a relocatable file has the offset 0, so it is
+  never unaligned. An executable which starts its
+  ${../glossary/code-section:/term} at 0x40000008 holds an unaligned first
+  instruction. The unaligned addresses are integral multiples of 8.
+references: []
+requirement-type: functional
+skip-reasons:
+  FirstUnaligned: |
+    The first instruction of the ${../glossary/code-section:/term} of a relocatable
+    file has the offset 0, which is aligned.
+test-action: |
+  size_t i;
+  size_t index;
+
+  if ( ctx->first ) {
+    index = 0;
+
+    if ( ctx->unaligned ) {
+      ctx->image.address += 8;
+    }
+  } else {
+    index = ctx->unaligned ? 6 : 4;
+
+    for ( i = 0; i < index - 1; ++i ) {
+      TxAppend( &ctx->image, TxNop() );
+    }
+
+    TxAppend( &ctx->image, ctx->previous );
+  }
+
+  TxAppend( &ctx->image, ctx->instruction );
+  TxAppend( &ctx->image, TxNop() );
+  TxAppend( &ctx->image, TxNop() );
+  ctx->offset = (uint32_t) ( 4 * index );
+  ctx->report = TxCheck( &ctx->image, NOTE_0011 );
+test-brief: null
+test-cleanup: null
+test-context:
+- brief: |
+    This member contains the image of the ELF file to check.
+  description: null
+  member: |
+    TxImage image
+- brief: |
+    This member contains the instruction.
+  description: null
+  member: |
+    uint32_t instruction
+- brief: |
+    This member contains the instruction before the instruction.
+  description: null
+  member: |
+    uint32_t previous
+- brief: |
+    This member is true, if the instruction is the first instruction.
+  description: null
+  member: |
+    bool first
+- brief: |
+    This member is true, if the address of the instruction is unaligned.
+  description: null
+  member: |
+    bool unaligned
+- brief: |
+    This member contains the offset of the instruction.
+  description: null
+  member: |
+    uint32_t offset
+- brief: |
+    This member references the report of the errata checker.
+  description: null
+  member: |
+    const char *report
+test-context-support: null
+test-description: null
+test-header: null
+test-includes: []
+test-local-includes:
+- nopinion.h
+- tx-support.h
+test-prepare: |
+  TxImageInit( &ctx->image );
+  ctx->first = false;
+test-setup: null
+test-stop: null
+test-support: null
+test-target: nopinion/tests/tc-check-tn-0011.c
+test-teardown: null
+text: |
+  ${.:text-template}
+transition-map:
+- enabled-by: true
+  post-conditions:
+    DelaySlot: None
+    Alignment: None
+  pre-conditions:
+    Instruction:
+    - Other
+    Previous:
+    - Bicc
+    - FBfcc
+    - CBccc
+    - Call
+    - Jmpl
+    - Other
+    Address: all
+    File: all
+- enabled-by: true
+  post-conditions:
+    DelaySlot: None
+    Alignment: None
+  pre-conditions:
+    Instruction:
+    - Other
+    Previous:
+    - None
+    Address:
+    - Aligned
+    File: all
+- enabled-by: true
+  post-conditions:
+    DelaySlot: None
+    Alignment: None
+  pre-conditions:
+    Instruction:
+    - Other
+    Previous:
+    - None
+    Address:
+    - Unaligned
+    File:
+    - Executable
+- enabled-by: true
+  post-conditions:
+    DelaySlot: Definite
+    Alignment: None
+  pre-conditions:
+    Instruction:
+    - Swap
+    - Ldstub
+    - Casa
+    Previous:
+    - Bicc
+    - FBfcc
+    - CBccc
+    - Call
+    Address:
+    - Aligned
+    File:
+    - Executable
+    - RelocatableAligned
+- enabled-by: true
+  post-conditions:
+    DelaySlot: Definite
+    Alignment: Definite
+  pre-conditions:
+    Instruction:
+    - Swap
+    - Ldstub
+    - Casa
+    Previous:
+    - Bicc
+    - FBfcc
+    - CBccc
+    - Call
+    Address:
+    - Unaligned
+    File:
+    - Executable
+    - RelocatableAligned
+- enabled-by: true
+  post-conditions:
+    DelaySlot: Definite
+    Alignment: Possible
+  pre-conditions:
+    Instruction:
+    - Swap
+    - Ldstub
+    - Casa
+    Previous:
+    - Bicc
+    - FBfcc
+    - CBccc
+    - Call
+    Address: all
+    File:
+    - RelocatableUnaligned
+- enabled-by: true
+  post-conditions:
+    DelaySlot: None
+    Alignment: None
+  pre-conditions:
+    Instruction:
+    - Swap
+    - Ldstub
+    - Casa
+    Previous:
+    - Jmpl
+    - Other
+    Address:
+    - Aligned
+    File:
+    - Executable
+    - RelocatableAligned
+- enabled-by: true
+  post-conditions:
+    DelaySlot: None
+    Alignment: Definite
+  pre-conditions:
+    Instruction:
+    - Swap
+    - Ldstub
+    - Casa
+    Previous:
+    - Jmpl
+    - Other
+    Address:
+    - Unaligned
+    File:
+    - Executable
+    - RelocatableAligned
+- enabled-by: true
+  post-conditions:
+    DelaySlot: None
+    Alignment: Possible
+  pre-conditions:
+    Instruction:
+    - Swap
+    - Ldstub
+    - Casa
+    Previous:
+    - Jmpl
+    - Other
+    Address: all
+    File:
+    - RelocatableUnaligned
+- enabled-by: true
+  post-conditions:
+    DelaySlot: None
+    Alignment: None
+  pre-conditions:
+    Instruction:
+    - Swap
+    - Ldstub
+    - Casa
+    Previous:
+    - None
+    Address:
+    - Aligned
+    File:
+    - Executable
+    - RelocatableAligned
+- enabled-by: true
+  post-conditions:
+    DelaySlot: None
+    Alignment: Possible
+  pre-conditions:
+    Instruction:
+    - Swap
+    - Ldstub
+    - Casa
+    Previous:
+    - None
+    Address:
+    - Aligned
+    File:
+    - RelocatableUnaligned
+- enabled-by: true
+  post-conditions:
+    DelaySlot: None
+    Alignment: Definite
+  pre-conditions:
+    Instruction:
+    - Swap
+    - Ldstub
+    - Casa
+    Previous:
+    - None
+    Address:
+    - Unaligned
+    File:
+    - Executable
+- enabled-by: true
+  post-conditions: FirstUnaligned
+  pre-conditions:
+    Instruction: all
+    Previous:
+    - None
+    Address:
+    - Unaligned
+    File:
+    - RelocatableAligned
+    - RelocatableUnaligned
+type: requirement

@@ -1,0 +1,828 @@
+SPDX-License-Identifier: CC-BY-SA-4.0 OR BSD-2-Clause
+copyrights:
+- Copyright (C) 2026 embedded brains GmbH & Co. KG
+enabled-by: true
+functional-type: action
+links:
+- role: requirement-refinement
+  uid: power-down
+post-conditions:
+- name: Load
+  states:
+  - name: None
+    test-code: |
+      T_eq_int( TxCountAt( ctx->report, ctx->offset, "power-down-without-load" ), 0 );
+    text: |
+      The errata checker shall report no ${../glossary/finding:/term} of a write to %asr19 without the load.
+  - name: Definite
+    test-code: |
+      T_eq_int( TxCountAt( ctx->report, ctx->offset, "power-down-without-load" ), 1 );
+      T_false( TxIsPossibleAt( ctx->report, ctx->offset, "power-down-without-load" ) );
+    text: |
+      The errata checker shall report one ${../glossary/definite-finding:/term} of
+      a write to %asr19 without the load for the write.
+  - name: Possible
+    test-code: |
+      T_eq_int( TxCountAt( ctx->report, ctx->offset, "power-down-without-load" ), 1 );
+      T_true( TxIsPossibleAt( ctx->report, ctx->offset, "power-down-without-load" ) );
+    text: |
+      The errata checker shall report one ${../glossary/possible-finding:/term} of
+      a write to %asr19 without the load for the write.
+  test-epilogue: null
+  test-prologue: null
+- name: Block
+  states:
+  - name: None
+    test-code: |
+      T_eq_int( TxCountAt( ctx->report, ctx->offset, "power-down-not-in-block" ), 0 );
+    text: |
+      The errata checker shall report no ${../glossary/finding:/term} of a write to %asr19 outside the 32-byte block of the sequence.
+  - name: Definite
+    test-code: |
+      T_eq_int( TxCountAt( ctx->report, ctx->offset, "power-down-not-in-block" ), 1 );
+      T_false( TxIsPossibleAt( ctx->report, ctx->offset, "power-down-not-in-block" ) );
+    text: |
+      The errata checker shall report one ${../glossary/definite-finding:/term} of
+      a write to %asr19 outside the 32-byte block of the sequence for the write.
+  - name: Possible
+    test-code: |
+      T_eq_int( TxCountAt( ctx->report, ctx->offset, "power-down-not-in-block" ), 1 );
+      T_true( TxIsPossibleAt( ctx->report, ctx->offset, "power-down-not-in-block" ) );
+    text: |
+      The errata checker shall report one ${../glossary/possible-finding:/term} of
+      a write to %asr19 outside the 32-byte block of the sequence for the write.
+  test-epilogue: null
+  test-prologue: null
+- name: Branch
+  states:
+  - name: None
+    test-code: |
+      T_eq_int( TxCountAt( ctx->report, ctx->offset, "power-down-branch-after-load" ), 0 );
+    text: |
+      The errata checker shall report no ${../glossary/finding:/term} of a branch or jump after the load.
+  - name: Definite
+    test-code: |
+      T_eq_int( TxCountAt( ctx->report, ctx->offset, "power-down-branch-after-load" ), 1 );
+      T_false( TxIsPossibleAt( ctx->report, ctx->offset, "power-down-branch-after-load" ) );
+    text: |
+      The errata checker shall report one ${../glossary/definite-finding:/term} of
+      a branch or jump after the load for the write.
+  - name: Possible
+    test-code: |
+      T_eq_int( TxCountAt( ctx->report, ctx->offset, "power-down-branch-after-load" ), 1 );
+      T_true( TxIsPossibleAt( ctx->report, ctx->offset, "power-down-branch-after-load" ) );
+    text: |
+      The errata checker shall report one ${../glossary/possible-finding:/term} of
+      a branch or jump after the load for the write.
+  test-epilogue: null
+  test-prologue: null
+- name: Ftahbram
+  states:
+  - name: None
+    test-code: |
+      T_eq_int( TxCountAt( ctx->report, ctx->offset, "power-down-in-ftahbram" ), 0 );
+    text: |
+      The errata checker shall report no ${../glossary/finding:/term} of a write to %asr19 in the FTAHBRAM.
+  - name: Definite
+    test-code: |
+      T_eq_int( TxCountAt( ctx->report, ctx->offset, "power-down-in-ftahbram" ), 1 );
+      T_false( TxIsPossibleAt( ctx->report, ctx->offset, "power-down-in-ftahbram" ) );
+    text: |
+      The errata checker shall report one ${../glossary/definite-finding:/term} of
+      a write to %asr19 in the FTAHBRAM for the write.
+  test-epilogue: null
+  test-prologue: null
+pre-conditions:
+- name: Write
+  states:
+  - name: Asr19
+    test-code: |
+      ctx->write = TxWrasr( 19 );
+    text: |
+      While the write is a WRASR instruction to %asr19.
+  - name: Asr18
+    test-code: |
+      ctx->write = TxWrasr( 18 );
+    text: |
+      While the write is a WRASR instruction to %asr18.
+  - name: Y
+    test-code: |
+      ctx->write = TxWrasr( 0 );
+    text: |
+      While the write is a WRY instruction.
+  test-epilogue: null
+  test-prologue: null
+- name: Load
+  states:
+  - name: Bypass
+    test-code: |
+      ctx->load = TxFormat3Asi( 3, 0x10, TX_G0, TX_O0, 0x1c, TX_G0 );
+    text: |
+      While the instruction after the write is an LDA instruction with the address
+      space identifier 0x1C and the destination %g0.
+  - name: OtherAsi
+    test-code: |
+      ctx->load = TxFormat3Asi( 3, 0x10, TX_G0, TX_O0, 0x0b, TX_G0 );
+    text: |
+      While the instruction after the write is an LDA instruction with the address
+      space identifier 0x0B and the destination %g0.
+  - name: OtherRegister
+    test-code: |
+      ctx->load = TxFormat3Asi( 3, 0x10, TX_G1, TX_O0, 0x1c, TX_G0 );
+    text: |
+      While the instruction after the write is an LDA instruction with the address
+      space identifier 0x1C and the destination %g1.
+  - name: Ld
+    test-code: |
+      ctx->load = TxLd();
+    text: |
+      While the instruction after the write is an LD instruction.
+  - name: Absent
+    test-code: |
+      ctx->load_absent = true;
+    text: |
+      While the ${../glossary/code-section:/term} ends after the write.
+  test-epilogue: null
+  test-prologue: null
+- name: Offset
+  states:
+  - name: Zero
+    test-code: |
+      ctx->index = 0;
+    text: |
+      While the offset of the write in its 32-byte block is 0.
+  - name: Twelve
+    test-code: |
+      ctx->index = 3;
+    text: |
+      While the offset of the write in its 32-byte block is 12.
+  - name: Sixteen
+    test-code: |
+      ctx->index = 4;
+    text: |
+      While the offset of the write in its 32-byte block is 16.
+  test-epilogue: null
+  test-prologue: null
+- name: Branch
+  states:
+  - name: None
+    test-code: |
+      ctx->branch = BRANCH_NONE;
+    text: |
+      While no branch or jump follows the write within 15 instructions.
+  - name: AfterLoad
+    test-code: |
+      ctx->branch = BRANCH_AFTER_LOAD;
+    text: |
+      While a branch follows the load.
+  - name: BlockEnd
+    test-code: |
+      ctx->branch = BRANCH_BLOCK_END;
+    text: |
+      While a branch is the last instruction of the 32-byte block of the write.
+  - name: NextBlock
+    test-code: |
+      ctx->branch = BRANCH_NEXT_BLOCK;
+    text: |
+      While a branch is the first instruction of the 32-byte block after the block
+      of the write.
+  - name: End
+    test-code: |
+      ctx->branch = BRANCH_END;
+    text: |
+      While the ${../glossary/code-section:/term} ends after the load.
+  test-epilogue: null
+  test-prologue: null
+- name: File
+  states:
+  - name: BeforeFtahbram
+    test-code: |
+      ctx->image.executable = true;
+      ctx->image.address = 0x9fffffe0;
+    text: |
+      While the ELF file is an executable, while the
+      ${../glossary/code-section:/term} starts at 0x9FFFFFE0.
+  - name: FtahbramBegin
+    test-code: |
+      ctx->image.executable = true;
+      ctx->image.address = 0xa0000000;
+    text: |
+      While the ELF file is an executable, while the
+      ${../glossary/code-section:/term} starts at 0xA0000000.
+  - name: FtahbramLast
+    test-code: |
+      ctx->image.executable = true;
+      ctx->image.address = 0xa00fffe0;
+    text: |
+      While the ELF file is an executable, while the
+      ${../glossary/code-section:/term} starts at 0xA00FFFE0.
+  - name: FtahbramEnd
+    test-code: |
+      ctx->image.executable = true;
+      ctx->image.address = 0xa0100000;
+    text: |
+      While the ELF file is an executable, while the
+      ${../glossary/code-section:/term} starts at 0xA0100000.
+  - name: RelocatableAligned
+    test-code: |
+      ctx->image.alignment = 32;
+    text: |
+      While the ELF file is relocatable, while the alignment of the
+      ${../glossary/code-section:/term} is an integral multiple of 32.
+  - name: RelocatableUnaligned
+    test-code: |
+      ctx->image.alignment = 16;
+    text: |
+      While the ELF file is relocatable, while the alignment of the
+      ${../glossary/code-section:/term} is 16.
+  test-epilogue: null
+  test-prologue: null
+rationale: |
+  Dimension Write covers the write to %asr19, the write to another ancillary
+  state register and the write to %y, 3 states.
+
+  Dimension Load covers the loads and the end of the
+  ${../glossary/code-section:/term}, 5 states. The load states vary the address
+  space identifier and the destination of workaround 2.
+
+  Dimension Offset covers the offsets of the write at the bounds of workaround
+  2, 3 states. The offsets 0 and 12 fit the sequence into one 32-byte block. The
+  offset 16 does not.
+
+  Dimension Branch covers the places of a branch and the end of the
+  ${../glossary/code-section:/term}, 5 states. A branch follows the load
+  directly, ends its block or starts the next block, or no branch exists.
+
+  Dimension File covers the ELF file types and the bounds of the FTAHBRAM area,
+  6 states.
+
+  Section 1.7.8 of the GR712RC user manual states workaround 2. The write to
+  %asr19 enters the power-down mode. The next instruction is the load
+  lda [reg] 0x1C, %g0. A 32-byte block holds the write, the load and the three
+  instructions after the load. No branch or jump follows the load before the
+  next 32-byte boundary. The sequence does not execute from the FTAHBRAM.
+  Section 1.4 maps the FTAHBRAM to the area from 0xA0000000 to 0xA0100000. A
+  relocatable file fixes the offset in a 32-byte block only for a
+  ${../glossary/code-section:/term} with an alignment of at least 32. It fixes no
+  address in the FTAHBRAM area. Without a known 32-byte boundary, the
+  ${../glossary/code-section:/term} may place the boundary up to seven
+  instructions after the load. The checks of the block and of the branch need
+  the load, so the load decides whether they apply. The
+  ${../glossary/code-section:/term} holds 16 instructions unless it ends earlier,
+  and a NOP fills each place which no dimension sets. The branch is a branch
+  always instruction with annulment.
+references: []
+requirement-type: functional
+skip-reasons: {}
+test-action: |
+  size_t count = 16;
+  size_t i;
+
+  if ( ctx->load_absent ) {
+    count = ctx->index + 1;
+  } else if ( ctx->branch == BRANCH_END ) {
+    count = ctx->index + 2;
+  }
+
+  for ( i = 0; i < count; ++i ) {
+    TxAppend( &ctx->image, TxNop() );
+  }
+
+  ctx->image.code[ ctx->index ] = ctx->write;
+
+  if ( !ctx->load_absent ) {
+    ctx->image.code[ ctx->index + 1 ] = ctx->load;
+  }
+
+  if ( ctx->branch == BRANCH_AFTER_LOAD ) {
+    ctx->image.code[ ctx->index + 2 ] = TxBicc( 8, true, 0 );
+  } else if ( ctx->branch == BRANCH_BLOCK_END ) {
+    ctx->image.code[ 7 ] = TxBicc( 8, true, 0 );
+  } else if ( ctx->branch == BRANCH_NEXT_BLOCK ) {
+    ctx->image.code[ 8 ] = TxBicc( 8, true, 0 );
+  }
+
+  ctx->offset = (uint32_t) ( 4 * ctx->index );
+  ctx->report = TxCheck( &ctx->image, NOTE_POWER_DOWN );
+test-brief: null
+test-cleanup: null
+test-context:
+- brief: |
+    This member contains the image of the ELF file to check.
+  description: null
+  member: |
+    TxImage image
+- brief: |
+    This member contains the write.
+  description: null
+  member: |
+    uint32_t write
+- brief: |
+    This member contains the instruction after the write.
+  description: null
+  member: |
+    uint32_t load
+- brief: |
+    This member is true, if the code section ends after the write.
+  description: null
+  member: |
+    bool load_absent
+- brief: |
+    This member contains the index of the write.
+  description: null
+  member: |
+    size_t index
+- brief: |
+    This member contains the place of the branch.
+  description: null
+  member: |
+    int branch
+- brief: |
+    This member contains the offset of the write.
+  description: null
+  member: |
+    uint32_t offset
+- brief: |
+    This member references the report of the errata checker.
+  description: null
+  member: |
+    const char *report
+test-context-support: |
+  #define BRANCH_NONE 0
+
+  #define BRANCH_AFTER_LOAD 1
+
+  #define BRANCH_BLOCK_END 2
+
+  #define BRANCH_NEXT_BLOCK 3
+
+  #define BRANCH_END 4
+test-description: null
+test-header: null
+test-includes: []
+test-local-includes:
+- nopinion.h
+- tx-support.h
+test-prepare: |
+  TxImageInit( &ctx->image );
+  ctx->load_absent = false;
+  ctx->branch = BRANCH_NONE;
+test-setup: null
+test-stop: null
+test-support: null
+test-target: nopinion/tests/tc-check-power-down.c
+test-teardown: null
+text: |
+  ${.:text-template}
+transition-map:
+- enabled-by: true
+  post-conditions:
+    Load: Definite
+    Block: None
+    Branch: None
+    Ftahbram: Definite
+  pre-conditions:
+    Write:
+    - Asr19
+    Load:
+    - OtherAsi
+    - OtherRegister
+    - Ld
+    Offset: all
+    Branch: all
+    File:
+    - FtahbramBegin
+    - FtahbramLast
+- enabled-by: true
+  post-conditions:
+    Load: Definite
+    Block: None
+    Branch: None
+    Ftahbram: None
+  pre-conditions:
+    Write:
+    - Asr19
+    Load:
+    - OtherAsi
+    - OtherRegister
+    - Ld
+    Offset: all
+    Branch: all
+    File:
+    - BeforeFtahbram
+    - FtahbramEnd
+    - RelocatableAligned
+    - RelocatableUnaligned
+- enabled-by: true
+  post-conditions:
+    Load: None
+    Block: Definite
+    Branch: Definite
+    Ftahbram: Definite
+  pre-conditions:
+    Write:
+    - Asr19
+    Load:
+    - Bypass
+    Offset:
+    - Sixteen
+    Branch:
+    - AfterLoad
+    - BlockEnd
+    File:
+    - FtahbramBegin
+    - FtahbramLast
+- enabled-by: true
+  post-conditions:
+    Load: None
+    Block: Definite
+    Branch: Definite
+    Ftahbram: None
+  pre-conditions:
+    Write:
+    - Asr19
+    Load:
+    - Bypass
+    Offset:
+    - Sixteen
+    Branch:
+    - AfterLoad
+    - BlockEnd
+    File:
+    - BeforeFtahbram
+    - FtahbramEnd
+    - RelocatableAligned
+- enabled-by: true
+  post-conditions:
+    Load: None
+    Block: Definite
+    Branch: None
+    Ftahbram: Definite
+  pre-conditions:
+    Write:
+    - Asr19
+    Load:
+    - Bypass
+    Offset:
+    - Sixteen
+    Branch:
+    - None
+    - NextBlock
+    File:
+    - FtahbramBegin
+    - FtahbramLast
+- enabled-by: true
+  post-conditions:
+    Load: None
+    Block: Definite
+    Branch: None
+    Ftahbram: None
+  pre-conditions:
+    Write:
+    - Asr19
+    Load:
+    - Bypass
+    Offset:
+    - Sixteen
+    Branch:
+    - None
+    - NextBlock
+    File:
+    - BeforeFtahbram
+    - FtahbramEnd
+    - RelocatableAligned
+- enabled-by: true
+  post-conditions:
+    Load: None
+    Block: Definite
+    Branch: Possible
+    Ftahbram: Definite
+  pre-conditions:
+    Write:
+    - Asr19
+    Load:
+    - Bypass
+    Offset:
+    - Sixteen
+    Branch:
+    - End
+    File:
+    - FtahbramBegin
+    - FtahbramLast
+- enabled-by: true
+  post-conditions:
+    Load: None
+    Block: Definite
+    Branch: Possible
+    Ftahbram: None
+  pre-conditions:
+    Write:
+    - Asr19
+    Load:
+    - Bypass
+    Offset:
+    - Sixteen
+    Branch:
+    - End
+    File:
+    - BeforeFtahbram
+    - FtahbramEnd
+    - RelocatableAligned
+- enabled-by: true
+  post-conditions:
+    Load: None
+    Block: None
+    Branch: Definite
+    Ftahbram: Definite
+  pre-conditions:
+    Write:
+    - Asr19
+    Load:
+    - Bypass
+    Offset:
+    - Zero
+    - Twelve
+    Branch:
+    - AfterLoad
+    - BlockEnd
+    File:
+    - FtahbramBegin
+    - FtahbramLast
+- enabled-by: true
+  post-conditions:
+    Load: None
+    Block: None
+    Branch: Definite
+    Ftahbram: None
+  pre-conditions:
+    Write:
+    - Asr19
+    Load:
+    - Bypass
+    Offset:
+    - Zero
+    - Twelve
+    Branch:
+    - AfterLoad
+    - BlockEnd
+    File:
+    - BeforeFtahbram
+    - FtahbramEnd
+    - RelocatableAligned
+- enabled-by: true
+  post-conditions:
+    Load: None
+    Block: None
+    Branch: None
+    Ftahbram: Definite
+  pre-conditions:
+    Write:
+    - Asr19
+    Load:
+    - Bypass
+    Offset:
+    - Zero
+    - Twelve
+    Branch:
+    - None
+    - NextBlock
+    File:
+    - FtahbramBegin
+    - FtahbramLast
+- enabled-by: true
+  post-conditions:
+    Load: None
+    Block: None
+    Branch: None
+    Ftahbram: None
+  pre-conditions:
+    Write: all
+    Load:
+    - Bypass
+    Offset:
+    - Zero
+    - Twelve
+    Branch:
+    - None
+    - NextBlock
+    File:
+    - BeforeFtahbram
+    - FtahbramEnd
+    - RelocatableAligned
+- enabled-by: true
+  post-conditions:
+    Load: None
+    Block: None
+    Branch: None
+    Ftahbram: None
+  pre-conditions:
+    Write:
+    - Asr18
+    - Y
+    Load:
+    - Absent
+    Offset: all
+    Branch: N/A
+    File: all
+- enabled-by: true
+  post-conditions:
+    Load: None
+    Block: None
+    Branch: None
+    Ftahbram: None
+  pre-conditions:
+    Write:
+    - Asr18
+    - Y
+    Load:
+    - Bypass
+    - OtherAsi
+    - OtherRegister
+    - Ld
+    Offset:
+    - Sixteen
+    Branch:
+    - None
+    - NextBlock
+    File:
+    - BeforeFtahbram
+    - FtahbramEnd
+    - RelocatableAligned
+- enabled-by: true
+  post-conditions:
+    Load: None
+    Block: None
+    Branch: None
+    Ftahbram: None
+  pre-conditions:
+    Write:
+    - Asr18
+    - Y
+    Load:
+    - Bypass
+    - OtherAsi
+    - OtherRegister
+    - Ld
+    Offset: all
+    Branch:
+    - AfterLoad
+    - BlockEnd
+    - End
+    File:
+    - BeforeFtahbram
+    - FtahbramEnd
+    - RelocatableAligned
+- enabled-by: true
+  post-conditions:
+    Load: None
+    Block: None
+    Branch: None
+    Ftahbram: None
+  pre-conditions:
+    Write:
+    - Asr18
+    - Y
+    Load:
+    - Bypass
+    - OtherAsi
+    - OtherRegister
+    - Ld
+    Offset: all
+    Branch: all
+    File:
+    - FtahbramBegin
+    - FtahbramLast
+    - RelocatableUnaligned
+- enabled-by: true
+  post-conditions:
+    Load: None
+    Block: None
+    Branch: None
+    Ftahbram: None
+  pre-conditions:
+    Write:
+    - Asr18
+    - Y
+    Load:
+    - OtherAsi
+    - OtherRegister
+    - Ld
+    Offset:
+    - Zero
+    - Twelve
+    Branch:
+    - None
+    - NextBlock
+    File:
+    - BeforeFtahbram
+    - FtahbramEnd
+    - RelocatableAligned
+- enabled-by: true
+  post-conditions:
+    Load: None
+    Block: None
+    Branch: Possible
+    Ftahbram: Definite
+  pre-conditions:
+    Write:
+    - Asr19
+    Load:
+    - Bypass
+    Offset:
+    - Zero
+    - Twelve
+    Branch:
+    - End
+    File:
+    - FtahbramBegin
+    - FtahbramLast
+- enabled-by: true
+  post-conditions:
+    Load: None
+    Block: None
+    Branch: Possible
+    Ftahbram: None
+  pre-conditions:
+    Write:
+    - Asr19
+    Load:
+    - Bypass
+    Offset:
+    - Zero
+    - Twelve
+    Branch:
+    - End
+    File:
+    - BeforeFtahbram
+    - FtahbramEnd
+    - RelocatableAligned
+- enabled-by: true
+  post-conditions:
+    Load: None
+    Block: Possible
+    Branch: None
+    Ftahbram: None
+  pre-conditions:
+    Write:
+    - Asr19
+    Load:
+    - Bypass
+    Offset: all
+    Branch:
+    - None
+    File:
+    - RelocatableUnaligned
+- enabled-by: true
+  post-conditions:
+    Load: None
+    Block: Possible
+    Branch: Possible
+    Ftahbram: None
+  pre-conditions:
+    Write:
+    - Asr19
+    Load:
+    - Bypass
+    Offset: all
+    Branch:
+    - AfterLoad
+    - BlockEnd
+    - NextBlock
+    - End
+    File:
+    - RelocatableUnaligned
+- enabled-by: true
+  post-conditions:
+    Load: Possible
+    Block: None
+    Branch: None
+    Ftahbram: Definite
+  pre-conditions:
+    Write:
+    - Asr19
+    Load:
+    - Absent
+    Offset: all
+    Branch: N/A
+    File:
+    - FtahbramBegin
+    - FtahbramLast
+- enabled-by: true
+  post-conditions:
+    Load: Possible
+    Block: None
+    Branch: None
+    Ftahbram: None
+  pre-conditions:
+    Write:
+    - Asr19
+    Load:
+    - Absent
+    Offset: all
+    Branch: N/A
+    File:
+    - BeforeFtahbram
+    - FtahbramEnd
+    - RelocatableAligned
+    - RelocatableUnaligned
+type: requirement

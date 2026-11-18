@@ -1,0 +1,421 @@
+SPDX-License-Identifier: CC-BY-SA-4.0 OR BSD-2-Clause
+copyrights:
+- Copyright (C) 2026 embedded brains GmbH & Co. KG
+enabled-by: true
+functional-type: action
+links:
+- role: requirement-refinement
+  uid: tn-0016
+post-conditions:
+- name: Finding
+  states:
+  - name: None
+    test-code: |
+      T_eq_int( TxCountAt( ctx->report, 0, "stfsr-after-stfsr" ), 0 );
+    text: |
+      The errata checker shall report no ${../glossary/finding:/term} of an STFSR
+      instruction after an STFSR instruction for the first instruction.
+  - name: Definite
+    test-code: |
+      T_eq_int( TxCountAt( ctx->report, 0, "stfsr-after-stfsr" ), 1 );
+      T_false( TxIsPossibleAt( ctx->report, 0, "stfsr-after-stfsr" ) );
+    text: |
+      The errata checker shall report one ${../glossary/definite-finding:/term} of
+      an STFSR instruction after an STFSR instruction for the first instruction.
+  - name: Possible
+    test-code: |
+      T_eq_int( TxCountAt( ctx->report, 0, "stfsr-after-stfsr" ), 1 );
+      T_true( TxIsPossibleAt( ctx->report, 0, "stfsr-after-stfsr" ) );
+    text: |
+      The errata checker shall report one ${../glossary/possible-finding:/term} of
+      an STFSR instruction after an STFSR instruction for the first instruction.
+  test-epilogue: null
+  test-prologue: null
+pre-conditions:
+- name: First
+  states:
+  - name: Stfsr
+    test-code: |
+      TxAppend( &ctx->image, TxStfsr() );
+    text: |
+      While the first instruction of the ${../glossary/code-section:/term} is an
+      STFSR instruction.
+  - name: Store
+    test-code: |
+      TxAppend( &ctx->image, TxSt() );
+    text: |
+      While the first instruction of the ${../glossary/code-section:/term} is a
+      store other than STFSR.
+  - name: Other
+    test-code: |
+      TxAppend( &ctx->image, TxAdd() );
+    text: |
+      While the first instruction of the ${../glossary/code-section:/term} is no
+      store.
+  test-epilogue: null
+  test-prologue: null
+- name: Second
+  states:
+  - name: Stfsr
+    test-code: |
+      TxAppend( &ctx->image, TxStfsr() );
+    text: |
+      While the second instruction of the ${../glossary/code-section:/term} is an
+      STFSR instruction.
+  - name: Other
+    test-code: |
+      TxAppend( &ctx->image, TxAdd() );
+    text: |
+      While the second instruction of the ${../glossary/code-section:/term} is no
+      store.
+  - name: Absent
+    test-code: |
+      /* The code section ends after the first instruction */
+    text: |
+      While the ${../glossary/code-section:/term} ends after the first
+      instruction.
+  test-epilogue: null
+  test-prologue: null
+- name: Third
+  states:
+  - name: Stfsr
+    test-code: |
+      TxAppend( &ctx->image, TxStfsr() );
+    text: |
+      While the third instruction of the ${../glossary/code-section:/term} is an
+      STFSR instruction.
+  - name: Other
+    test-code: |
+      TxAppend( &ctx->image, TxAdd() );
+    text: |
+      While the third instruction of the ${../glossary/code-section:/term} is no
+      store.
+  - name: Absent
+    test-code: |
+      /* The code section ends after the second instruction */
+    text: |
+      While the ${../glossary/code-section:/term} ends after the second
+      instruction.
+  test-epilogue: null
+  test-prologue: null
+- name: Fourth
+  states:
+  - name: Stfsr
+    test-code: |
+      TxAppend( &ctx->image, TxStfsr() );
+    text: |
+      While the fourth instruction of the ${../glossary/code-section:/term} is an
+      STFSR instruction.
+  - name: Other
+    test-code: |
+      TxAppend( &ctx->image, TxAdd() );
+    text: |
+      While the fourth instruction of the ${../glossary/code-section:/term} is no
+      store.
+  - name: Absent
+    test-code: |
+      /* The code section ends after the third instruction */
+    text: |
+      While the ${../glossary/code-section:/term} ends after the third
+      instruction.
+  test-epilogue: null
+  test-prologue: null
+- name: Fifth
+  states:
+  - name: Stfsr
+    test-code: |
+      TxAppend( &ctx->image, TxStfsr() );
+    text: |
+      While the fifth instruction of the ${../glossary/code-section:/term} is an
+      STFSR instruction.
+  - name: Other
+    test-code: |
+      TxAppend( &ctx->image, TxAdd() );
+    text: |
+      While the fifth instruction of the ${../glossary/code-section:/term} is no
+      store.
+  - name: Absent
+    test-code: |
+      /* The code section ends after the fourth instruction */
+    text: |
+      While the ${../glossary/code-section:/term} ends after the fourth
+      instruction.
+  test-epilogue: null
+  test-prologue: null
+rationale: |
+  Dimension First covers the STFSR instruction, the other stores and the other
+  instructions, 3 states.
+
+  Dimension Second covers the STFSR instruction, the other instructions and the
+  end of the ${../glossary/code-section:/term}, 3 states.
+
+  Dimension Third covers the STFSR instruction, the other instructions and the
+  end of the ${../glossary/code-section:/term}, 3 states.
+
+  Dimension Fourth covers the STFSR instruction, the other instructions and the
+  end of the ${../glossary/code-section:/term}, 3 states.
+
+  Dimension Fifth covers the STFSR instruction, the other instructions and the
+  end of the ${../glossary/code-section:/term}, 3 states.
+
+  Section 4.2 of the technical note concerns an STFSR instruction after an
+  fp_exception trap. The GRFPC clears the field ftt of the FSR with a delay of
+  up to three instructions.
+  An STFSR instruction within these three instructions may therefore store a
+  non-zero ftt. Dimension Fifth shows that an STFSR instruction after them
+  gives no ${../glossary/finding:/term}. A dimension after the end of the
+  ${../glossary/code-section:/term} is not applicable. The instruction after the
+  end of the ${../glossary/code-section:/term} is an
+  ${../glossary/unknown-instruction:/term}.
+references: []
+requirement-type: functional
+skip-reasons: {}
+test-action: |
+  ctx->report = TxCheck( &ctx->image, NOTE_0016 );
+test-brief: null
+test-cleanup: null
+test-context:
+- brief: |
+    This member contains the image of the ELF file to check.
+  description: null
+  member: |
+    TxImage image
+- brief: |
+    This member references the report of the errata checker.
+  description: null
+  member: |
+    const char *report
+test-context-support: null
+test-description: null
+test-header: null
+test-includes: []
+test-local-includes:
+- nopinion.h
+- tx-support.h
+test-prepare: |
+  TxImageInit( &ctx->image );
+test-setup: null
+test-stop: null
+test-support: null
+test-target: nopinion/tests/tc-check-tn-0016-stfsr.c
+test-teardown: null
+text: |
+  ${.:text-template}
+transition-map:
+- enabled-by: true
+  post-conditions:
+    Finding: Definite
+  pre-conditions:
+    First:
+    - Stfsr
+    Second:
+    - Stfsr
+    - Other
+    Third:
+    - Stfsr
+    - Other
+    Fourth:
+    - Stfsr
+    Fifth: all
+- enabled-by: true
+  post-conditions:
+    Finding: Definite
+  pre-conditions:
+    First:
+    - Stfsr
+    Second:
+    - Stfsr
+    - Other
+    Third:
+    - Stfsr
+    Fourth:
+    - Absent
+    Fifth: N/A
+- enabled-by: true
+  post-conditions:
+    Finding: Definite
+  pre-conditions:
+    First:
+    - Stfsr
+    Second:
+    - Stfsr
+    - Other
+    Third:
+    - Stfsr
+    Fourth:
+    - Other
+    Fifth: all
+- enabled-by: true
+  post-conditions:
+    Finding: Definite
+  pre-conditions:
+    First:
+    - Stfsr
+    Second:
+    - Stfsr
+    Third:
+    - Absent
+    Fourth: N/A
+    Fifth: N/A
+- enabled-by: true
+  post-conditions:
+    Finding: Definite
+  pre-conditions:
+    First:
+    - Stfsr
+    Second:
+    - Stfsr
+    Third:
+    - Other
+    Fourth:
+    - Absent
+    Fifth: N/A
+- enabled-by: true
+  post-conditions:
+    Finding: Definite
+  pre-conditions:
+    First:
+    - Stfsr
+    Second:
+    - Stfsr
+    Third:
+    - Other
+    Fourth:
+    - Other
+    Fifth: all
+- enabled-by: true
+  post-conditions:
+    Finding: None
+  pre-conditions:
+    First: all
+    Second:
+    - Other
+    Third:
+    - Other
+    Fourth:
+    - Other
+    Fifth: all
+- enabled-by: true
+  post-conditions:
+    Finding: None
+  pre-conditions:
+    First:
+    - Store
+    - Other
+    Second:
+    - Absent
+    Third: N/A
+    Fourth: N/A
+    Fifth: N/A
+- enabled-by: true
+  post-conditions:
+    Finding: None
+  pre-conditions:
+    First:
+    - Store
+    - Other
+    Second:
+    - Stfsr
+    - Other
+    Third:
+    - Absent
+    Fourth: N/A
+    Fifth: N/A
+- enabled-by: true
+  post-conditions:
+    Finding: None
+  pre-conditions:
+    First:
+    - Store
+    - Other
+    Second:
+    - Stfsr
+    - Other
+    Third:
+    - Stfsr
+    - Other
+    Fourth:
+    - Absent
+    Fifth: N/A
+- enabled-by: true
+  post-conditions:
+    Finding: None
+  pre-conditions:
+    First:
+    - Store
+    - Other
+    Second:
+    - Stfsr
+    - Other
+    Third:
+    - Stfsr
+    - Other
+    Fourth:
+    - Stfsr
+    Fifth: all
+- enabled-by: true
+  post-conditions:
+    Finding: None
+  pre-conditions:
+    First:
+    - Store
+    - Other
+    Second:
+    - Stfsr
+    - Other
+    Third:
+    - Stfsr
+    Fourth:
+    - Other
+    Fifth: all
+- enabled-by: true
+  post-conditions:
+    Finding: None
+  pre-conditions:
+    First:
+    - Store
+    - Other
+    Second:
+    - Stfsr
+    Third:
+    - Other
+    Fourth:
+    - Other
+    Fifth: all
+- enabled-by: true
+  post-conditions:
+    Finding: Possible
+  pre-conditions:
+    First:
+    - Stfsr
+    Second:
+    - Absent
+    Third: N/A
+    Fourth: N/A
+    Fifth: N/A
+- enabled-by: true
+  post-conditions:
+    Finding: Possible
+  pre-conditions:
+    First:
+    - Stfsr
+    Second:
+    - Other
+    Third:
+    - Absent
+    Fourth: N/A
+    Fifth: N/A
+- enabled-by: true
+  post-conditions:
+    Finding: Possible
+  pre-conditions:
+    First:
+    - Stfsr
+    Second:
+    - Other
+    Third:
+    - Other
+    Fourth:
+    - Absent
+    Fifth: N/A
+type: requirement

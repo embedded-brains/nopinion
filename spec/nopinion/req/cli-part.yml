@@ -1,0 +1,49 @@
+SPDX-License-Identifier: CC-BY-SA-4.0 OR BSD-2-Clause
+copyrights:
+- Copyright (C) 2026 embedded brains GmbH & Co. KG
+enabled-by: true
+functional-type: function
+links:
+- role: requirement-refinement
+  uid: cli
+- location: section 2.1
+  role: reference
+  uid: /ref/ip/gaisler/grlib-tn-0009-1-1
+- location: section 1.3
+  role: reference
+  uid: /ref/ip/gaisler/grlib-tn-0011-1-5
+- location: section 1.2
+  role: reference
+  uid: /ref/ip/gaisler/grlib-tn-0012-1-3
+- location: section 1.2
+  role: reference
+  uid: /ref/ip/gaisler/grlib-tn-0013-1-3
+- location: section 2.2
+  role: reference
+  uid: /ref/ip/gaisler/grlib-tn-0016-1-0
+- location: section 2.2
+  role: reference
+  uid: /ref/ip/gaisler/grlib-tn-0018-1-1
+- location: section 1.7
+  role: reference
+  uid: /ref/soc/gaisler/gr712rc/gr712rc-um-2-17
+- location: chapter 43
+  role: reference
+  uid: /ref/soc/gaisler/gr740/gr740-um-ds-2-10
+rationale: |
+  The documents list the parts which each erratum affects.
+
+  Every erratum which the errata checker checks affects the GR712RC.
+  GRLIB-TN-0016 and GR740 erratum 20-1 affect the GR740. GRLIB-TN-0009, -0011 and
+  -0018 affect the LEON3FT-RTAX. GRLIB-TN-0009, -0011, -0013, -0016 and -0018
+  affect the UT699, the UT699E and the UT700.
+
+  Section 1.2 of GRLIB-TN-0013 names only the first GR740 silicon for prototypes.
+  Chapter 43 of the GR740 user manual does not list the erratum, so the errata
+  checker does not check it for the GR740.
+references: []
+requirement-type: functional
+text: |
+  Where the option -p names a part, the errata checker shall check only the
+  errata which affect the part.
+type: requirement

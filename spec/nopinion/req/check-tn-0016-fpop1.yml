@@ -1,0 +1,182 @@
+SPDX-License-Identifier: CC-BY-SA-4.0 OR BSD-2-Clause
+copyrights:
+- Copyright (C) 2026 embedded brains GmbH & Co. KG
+enabled-by: true
+functional-type: action
+links:
+- role: requirement-refinement
+  uid: tn-0016
+post-conditions:
+- name: Finding
+  states:
+  - name: None
+    test-code: |
+      T_eq_int( TxCountAt( ctx->report, 0, "stfsr-after-fpop1" ), 0 );
+    text: |
+      The errata checker shall report no ${../glossary/finding:/term} of an STFSR
+      instruction after an FPop1 instruction for the first instruction.
+  - name: Definite
+    test-code: |
+      T_eq_int( TxCountAt( ctx->report, 0, "stfsr-after-fpop1" ), 1 );
+      T_false( TxIsPossibleAt( ctx->report, 0, "stfsr-after-fpop1" ) );
+    text: |
+      The errata checker shall report one ${../glossary/definite-finding:/term} of
+      an STFSR instruction after an FPop1 instruction for the first instruction.
+  - name: Possible
+    test-code: |
+      T_eq_int( TxCountAt( ctx->report, 0, "stfsr-after-fpop1" ), 1 );
+      T_true( TxIsPossibleAt( ctx->report, 0, "stfsr-after-fpop1" ) );
+    text: |
+      The errata checker shall report one ${../glossary/possible-finding:/term} of
+      an STFSR instruction after an FPop1 instruction for the first instruction.
+  test-epilogue: null
+  test-prologue: null
+pre-conditions:
+- name: First
+  states:
+  - name: Fpop1
+    test-code: |
+      TxAppend( &ctx->image, TxFadds() );
+    text: |
+      While the first instruction of the ${../glossary/code-section:/term} is an
+      FPop1 instruction other than FDIV and FSQRT.
+  - name: Fdiv
+    test-code: |
+      TxAppend( &ctx->image, TxFpop1( TX_FDIVS, 3, 1, 2 ) );
+    text: |
+      While the first instruction of the ${../glossary/code-section:/term} is an
+      FDIV instruction.
+  - name: Fpop2
+    test-code: |
+      TxAppend( &ctx->image, TxFcmps() );
+    text: |
+      While the first instruction of the ${../glossary/code-section:/term} is an
+      FPop2 instruction.
+  - name: Load
+    test-code: |
+      TxAppend( &ctx->image, TxLdf() );
+    text: |
+      While the first instruction of the ${../glossary/code-section:/term} is a
+      floating-point load.
+  - name: Other
+    test-code: |
+      TxAppend( &ctx->image, TxAdd() );
+    text: |
+      While the first instruction of the ${../glossary/code-section:/term} is no
+      floating-point instruction.
+  test-epilogue: null
+  test-prologue: null
+- name: Second
+  states:
+  - name: Stfsr
+    test-code: |
+      TxAppend( &ctx->image, TxStfsr() );
+    text: |
+      While the second instruction of the ${../glossary/code-section:/term} is an
+      STFSR instruction.
+  - name: Store
+    test-code: |
+      TxAppend( &ctx->image, TxStfReg( 3 ) );
+    text: |
+      While the second instruction of the ${../glossary/code-section:/term} is a
+      floating-point store other than STFSR.
+  - name: Other
+    test-code: |
+      TxAppend( &ctx->image, TxAdd() );
+    text: |
+      While the second instruction of the ${../glossary/code-section:/term} is no
+      store.
+  - name: Absent
+    test-code: |
+      /* The code section ends after the first instruction */
+    text: |
+      While the ${../glossary/code-section:/term} ends after the first instruction.
+  test-epilogue: null
+  test-prologue: null
+rationale: |
+  Dimension First covers the instruction classes of section 4.1 of the
+  technical note, 5 states.
+
+  Dimension Second covers the STFSR instruction, the other floating-point stores,
+  the other instructions and the end of the ${../glossary/code-section:/term}, 4
+  states.
+
+  Section 4.1 of the technical note names FADDs, FDIVd, FMOVs and FiTOs as FPop1
+  instructions which trigger the behaviour. FPop2 instructions, loads, stores and
+  other instructions before an STFSR do not trigger it. The flow of execution
+  through control transfers is a matter of the flow requirements. The
+  instruction after the end of the ${../glossary/code-section:/term} is an
+  ${../glossary/unknown-instruction:/term}.
+references: []
+requirement-type: functional
+skip-reasons: {}
+test-action: |
+  ctx->report = TxCheck( &ctx->image, NOTE_0016 );
+test-brief: null
+test-cleanup: null
+test-context:
+- brief: |
+    This member contains the image of the ELF file to check.
+  description: null
+  member: |
+    TxImage image
+- brief: |
+    This member references the report of the errata checker.
+  description: null
+  member: |
+    const char *report
+test-context-support: null
+test-description: null
+test-header: null
+test-includes: []
+test-local-includes:
+- nopinion.h
+- tx-support.h
+test-prepare: |
+  TxImageInit( &ctx->image );
+test-setup: null
+test-stop: null
+test-support: null
+test-target: nopinion/tests/tc-check-tn-0016-fpop1.c
+test-teardown: null
+text: |
+  ${.:text-template}
+transition-map:
+- enabled-by: true
+  post-conditions:
+    Finding: Definite
+  pre-conditions:
+    First:
+    - Fpop1
+    - Fdiv
+    Second:
+    - Stfsr
+- enabled-by: true
+  post-conditions:
+    Finding: None
+  pre-conditions:
+    First: all
+    Second:
+    - Store
+    - Other
+- enabled-by: true
+  post-conditions:
+    Finding: None
+  pre-conditions:
+    First:
+    - Fpop2
+    - Load
+    - Other
+    Second:
+    - Stfsr
+    - Absent
+- enabled-by: true
+  post-conditions:
+    Finding: Possible
+  pre-conditions:
+    First:
+    - Fpop1
+    - Fdiv
+    Second:
+    - Absent
+type: requirement

@@ -1,0 +1,189 @@
+SPDX-License-Identifier: CC-BY-SA-4.0 OR BSD-2-Clause
+copyrights:
+- Copyright (C) 2026 embedded brains GmbH & Co. KG
+enabled-by: true
+functional-type: action
+links:
+- role: requirement-refinement
+  uid: report
+post-conditions:
+- name: Line
+  states:
+  - name: Expected
+    test-code: |
+      char line[ 128 ];
+      char expected[ 128 ];
+
+      TxLineAt( ctx->report, 4, "TN-0009", line, sizeof( line ) );
+      (void) snprintf(
+        expected,
+        sizeof( expected ),
+        "t.o: .text+0x4%s%s: TN-0009 back-to-back-store%s",
+        ctx->address,
+        ctx->symbol,
+        ctx->possible ? " possible" : ""
+      );
+      T_eq_str( line, expected );
+    text: |
+      The errata checker shall report the line "<file>: <section>+0x<offset>"
+      followed by " \[0x<address>\]" for an executable, by " \<<symbol>+0x<delta>>"
+      for a symbol at or before the instruction, by ": <erratum> <kind>" and by "
+      possible" for a ${../glossary/possible-finding:/term}.
+  test-epilogue: null
+  test-prologue: null
+pre-conditions:
+- name: File
+  states:
+  - name: Relocatable
+    test-code: |
+      ctx->address = "";
+    text: |
+      While the ELF file is relocatable.
+  - name: Executable
+    test-code: |
+      ctx->image.executable = true;
+      ctx->image.address = 0x40001000;
+      ctx->address = " [0x40001004]";
+    text: |
+      While the ELF file is an executable.
+  test-epilogue: null
+  test-prologue: null
+- name: Symbols
+  states:
+  - name: None
+    test-code: |
+      TxAddSymbol( &ctx->image, "g", 0, 0x11, TX_SECTION_TEXT );
+      ctx->symbol = "";
+    text: |
+      While no function and no symbol without type of the
+      ${../glossary/code-section:/term} exists.
+  - name: AtStart
+    test-code: |
+      ctx->symbol = " <f+0x4>";
+    text: |
+      While one function of the ${../glossary/code-section:/term} starts at offset 0.
+  - name: Around
+    test-code: |
+      TxAddSymbol( &ctx->image, "g", 8, 0x12, TX_SECTION_TEXT );
+      TxAddSymbol( &ctx->image, "f", 0, 0x12, TX_SECTION_TEXT );
+      ctx->symbol = " <f+0x4>";
+    text: |
+      While one function starts before the instruction and one after it.
+  - name: After
+    test-code: |
+      TxAddSymbol( &ctx->image, "g", 8, 0x12, TX_SECTION_TEXT );
+      TxAddSymbol( &ctx->image, "h", 12, 0x12, TX_SECTION_TEXT );
+      ctx->symbol = "";
+    text: |
+      While every function starts after the instruction.
+  - name: Equal
+    test-code: |
+      TxAddSymbol( &ctx->image, "b", 0, 0x12, TX_SECTION_TEXT );
+      TxAddSymbol( &ctx->image, "c", 0, 0x10, TX_SECTION_TEXT );
+      TxAddSymbol( &ctx->image, "a", 0, 0x12, TX_SECTION_TEXT );
+      ctx->symbol = " <c+0x4>";
+    text: |
+      While three functions or symbols without type start at offset 0.
+  test-epilogue: null
+  test-prologue: null
+- name: Match
+  states:
+  - name: Definite
+    test-code: |
+      ctx->possible = false;
+    text: |
+      While the ${../glossary/finding:/term} is a
+      ${../glossary/definite-finding:/term}.
+  - name: Possible
+    test-code: |
+      ctx->possible = true;
+    text: |
+      While the ${../glossary/finding:/term} is a
+      ${../glossary/possible-finding:/term}.
+  test-epilogue: null
+  test-prologue: null
+rationale: |
+  Dimension File covers the ELF file types which the errata checker accepts, 2
+  states.
+
+  Dimension Symbols covers the placements of the symbols relative to the
+  instruction, 5 states.
+
+  Dimension Match covers the kinds of a ${../glossary/finding:/term}, 2 states.
+
+  The test checks an ADD, a store, an ADD and, for a
+  ${../glossary/definite-finding:/term}, a store and a NOP. The
+  ${../glossary/finding:/term} of the stale cache entry erratum names the store
+  at offset 4. The offset is relative to the start of the section. The address of
+  an executable is the address of the section plus the offset. The report names
+  the symbol with the greatest value which does not exceed the offset of a
+  relocatable file or the address of an executable. Of several such symbols, it
+  names the symbol whose name is last in byte order.
+references: []
+requirement-type: functional
+skip-reasons: {}
+test-action: |
+  TxAppend( &ctx->image, TxAdd() );
+  TxAppend( &ctx->image, TxSt() );
+  TxAppend( &ctx->image, TxAdd() );
+
+  if ( !ctx->possible ) {
+    TxAppend( &ctx->image, TxSt() );
+    TxAppend( &ctx->image, TxNop() );
+  }
+
+  ctx->report = TxCheck( &ctx->image, NOTE_0009 );
+test-brief: null
+test-cleanup: null
+test-context:
+- brief: |
+    This member contains the image of the ELF file to check.
+  description: null
+  member: |
+    TxImage image
+- brief: |
+    This member contains the expected address part of the line.
+  description: null
+  member: |
+    const char *address
+- brief: |
+    This member contains the expected symbol part of the line.
+  description: null
+  member: |
+    const char *symbol
+- brief: |
+    This member is true, if the finding is a possible finding.
+  description: null
+  member: |
+    bool possible
+- brief: |
+    This member references the report of the errata checker.
+  description: null
+  member: |
+    const char *report
+test-context-support: null
+test-description: null
+test-header: null
+test-includes:
+- stdio.h
+test-local-includes:
+- nopinion.h
+- tx-support.h
+test-prepare: |
+  TxImageInit( &ctx->image );
+test-setup: null
+test-stop: null
+test-support: null
+test-target: nopinion/tests/tc-report-line.c
+test-teardown: null
+text: |
+  ${.:text-template}
+transition-map:
+- enabled-by: true
+  post-conditions:
+    Line: Expected
+  pre-conditions:
+    File: all
+    Symbols: all
+    Match: all
+type: requirement

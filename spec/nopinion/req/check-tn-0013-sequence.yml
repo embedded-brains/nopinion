@@ -1,0 +1,709 @@
+SPDX-License-Identifier: CC-BY-SA-4.0 OR BSD-2-Clause
+copyrights:
+- Copyright (C) 2026 embedded brains GmbH & Co. KG
+enabled-by: true
+functional-type: action
+links:
+- role: requirement-refinement
+  uid: tn-0013
+post-conditions:
+- name: Finding
+  states:
+  - name: None
+    test-code: |
+      T_eq_int( TxCountAt( ctx->report, 0, "TN-0013" ), 0 );
+    text: |
+      The errata checker shall report no ${../glossary/finding:/term} of the missing
+      FDIV/FSQRT result erratum for the first instruction.
+  - name: Definite
+    test-code: |
+      T_eq_int( TxCountAt( ctx->report, 0, "TN-0013" ), 1 );
+      T_false( TxIsPossibleAt( ctx->report, 0, "TN-0013" ) );
+    text: |
+      The errata checker shall report one ${../glossary/definite-finding:/term} of
+      the missing FDIV/FSQRT result erratum for the first instruction.
+  - name: Possible
+    test-code: |
+      T_eq_int( TxCountAt( ctx->report, 0, "TN-0013" ), 1 );
+      T_true( TxIsPossibleAt( ctx->report, 0, "TN-0013" ) );
+    text: |
+      The errata checker shall report one ${../glossary/possible-finding:/term} of
+      the missing FDIV/FSQRT result erratum for the first instruction.
+  test-epilogue: null
+  test-prologue: null
+pre-conditions:
+- name: First
+  states:
+  - name: Div
+    test-code: |
+      TxAppend( &ctx->image, TxFpop1( TX_FDIVS, 3, 1, 2 ) );
+    text: |
+      While the first instruction of the ${../glossary/code-section:/term} is an FDIV
+      or FSQRT instruction.
+  - name: Other
+    test-code: |
+      TxAppend( &ctx->image, TxSt() );
+    text: |
+      While the first instruction of the ${../glossary/code-section:/term} is no FDIV
+      and no FSQRT instruction and transfers no control.
+  test-epilogue: null
+  test-prologue: null
+- name: Second
+  states:
+  - name: Op
+    test-code: |
+      TxAppend( &ctx->image, TxFpop1( TX_FADDS, 6, 4, 5 ) );
+    text: |
+      While the second instruction is an FPop1 instruction other than FDIV and FSQRT
+      which does not depend on the first instruction.
+  - name: Load
+    test-code: |
+      TxAppend( &ctx->image, TxLdfReg( 7 ) );
+    text: |
+      While the second instruction is a load of a floating-point register which does
+      not depend on the first instruction.
+  - name: Div
+    test-code: |
+      TxAppend( &ctx->image, TxFpop1( TX_FDIVS, 10, 8, 9 ) );
+    text: |
+      While the second instruction is an FDIV or FSQRT instruction which does not
+      depend on the first instruction.
+  - name: Other
+    test-code: |
+      TxAppend( &ctx->image, TxAdd() );
+    text: |
+      While the second instruction is no floating-point instruction and transfers no
+      control.
+  - name: Absent
+    test-code: |
+      /* The code section ends after the first instruction */
+    text: |
+      While the ${../glossary/code-section:/term} ends after the first instruction.
+  test-epilogue: null
+  test-prologue: null
+- name: Third
+  states:
+  - name: Op
+    test-code: |
+      TxAppend( &ctx->image, TxFpop1( TX_FADDS, 6, 4, 5 ) );
+    text: |
+      While the third instruction is an FPop1 instruction other than FDIV and FSQRT
+      which does not depend on the first instruction.
+  - name: Load
+    test-code: |
+      TxAppend( &ctx->image, TxLdfReg( 7 ) );
+    text: |
+      While the third instruction is a load of a floating-point register which does
+      not depend on the first instruction.
+  - name: Div
+    test-code: |
+      TxAppend( &ctx->image, TxFpop1( TX_FDIVS, 10, 8, 9 ) );
+    text: |
+      While the third instruction is an FDIV or FSQRT instruction which does not
+      depend on the first instruction.
+  - name: Other
+    test-code: |
+      TxAppend( &ctx->image, TxAdd() );
+    text: |
+      While the third instruction is no floating-point instruction and transfers no
+      control.
+  - name: Absent
+    test-code: |
+      /* The code section ends after the second instruction */
+    text: |
+      While the ${../glossary/code-section:/term} ends after the second instruction.
+  test-epilogue: null
+  test-prologue: null
+- name: Fourth
+  states:
+  - name: Op
+    test-code: |
+      TxAppend( &ctx->image, TxFpop1( TX_FADDS, 6, 4, 5 ) );
+    text: |
+      While the fourth instruction is an FPop1 instruction other than FDIV and FSQRT
+      which does not depend on the first instruction.
+  - name: Load
+    test-code: |
+      TxAppend( &ctx->image, TxLdfReg( 7 ) );
+    text: |
+      While the fourth instruction is a load of a floating-point register which does
+      not depend on the first instruction.
+  - name: Div
+    test-code: |
+      TxAppend( &ctx->image, TxFpop1( TX_FDIVS, 10, 8, 9 ) );
+    text: |
+      While the fourth instruction is an FDIV or FSQRT instruction which does not
+      depend on the first instruction.
+  - name: Other
+    test-code: |
+      TxAppend( &ctx->image, TxAdd() );
+    text: |
+      While the fourth instruction is no floating-point instruction and transfers no
+      control.
+  - name: Absent
+    test-code: |
+      /* The code section ends after the third instruction */
+    text: |
+      While the ${../glossary/code-section:/term} ends after the third instruction.
+  test-epilogue: null
+  test-prologue: null
+- name: Fifth
+  states:
+  - name: Op
+    test-code: |
+      TxAppend( &ctx->image, TxFpop1( TX_FADDS, 6, 4, 5 ) );
+    text: |
+      While the fifth instruction is an FPop1 instruction other than FDIV and FSQRT
+      which does not depend on the first instruction.
+  - name: Load
+    test-code: |
+      TxAppend( &ctx->image, TxLdfReg( 7 ) );
+    text: |
+      While the fifth instruction is a load of a floating-point register which does
+      not depend on the first instruction.
+  - name: Div
+    test-code: |
+      TxAppend( &ctx->image, TxFpop1( TX_FDIVS, 10, 8, 9 ) );
+    text: |
+      While the fifth instruction is an FDIV or FSQRT instruction which does not
+      depend on the first instruction.
+  - name: Other
+    test-code: |
+      TxAppend( &ctx->image, TxAdd() );
+    text: |
+      While the fifth instruction is no floating-point instruction and transfers no
+      control.
+  - name: Absent
+    test-code: |
+      /* The code section ends after the fourth instruction */
+    text: |
+      While the ${../glossary/code-section:/term} ends after the fourth instruction.
+  test-epilogue: null
+  test-prologue: null
+rationale: |
+  Dimension First covers the instructions of SPARC V8 which transfer no control,
+  2 states.
+
+  Dimension Second covers the instructions of SPARC V8 which transfer no
+  control and the end of the ${../glossary/code-section:/term}, 5 states.
+
+  Dimension Third covers the instructions of SPARC V8 which transfer no
+  control and the end of the ${../glossary/code-section:/term}, 5 states.
+
+  Dimension Fourth covers the instructions of SPARC V8 which transfer no
+  control and the end of the ${../glossary/code-section:/term}, 5 states.
+
+  Dimension Fifth covers the instructions of SPARC V8 which transfer no
+  control and the end of the ${../glossary/code-section:/term}, 5 states.
+
+  The arrangement of each dimension appends its instruction to the
+  ${../glossary/code-section:/term}, so the order of the dimensions is the order
+  of the instructions. The instruction after the end of the
+  ${../glossary/code-section:/term} is an
+  ${../glossary/unknown-instruction:/term}.
+
+  The registers of the instructions do not overlap the destination of the first
+  instruction. Another requirement specifies the register dependencies.
+references: []
+requirement-type: functional
+skip-reasons: {}
+test-action: |
+  ctx->report = TxCheck( &ctx->image, NOTE_0013 );
+test-brief: null
+test-cleanup: null
+test-context:
+- brief: |
+    This member contains the image of the ELF file to check.
+  description: null
+  member: |
+    TxImage image
+- brief: |
+    This member references the report of the errata checker.
+  description: null
+  member: |
+    const char *report
+test-context-support: null
+test-description: null
+test-header: null
+test-includes: []
+test-local-includes:
+- nopinion.h
+- tx-support.h
+test-prepare: |
+  TxImageInit( &ctx->image );
+test-setup: null
+test-stop: null
+test-support: null
+test-target: nopinion/tests/tc-check-tn-0013-sequence.c
+test-teardown: null
+text: |
+  ${.:text-template}
+transition-map:
+- enabled-by: true
+  post-conditions:
+    Finding: None
+  pre-conditions:
+    First:
+    - Div
+    Second:
+    - Div
+    Third:
+    - Absent
+    Fourth: N/A
+    Fifth: N/A
+- enabled-by: true
+  post-conditions:
+    Finding: None
+  pre-conditions:
+    First:
+    - Div
+    Second:
+    - Div
+    Third:
+    - Op
+    - Load
+    - Div
+    - Other
+    Fourth:
+    - Absent
+    Fifth: N/A
+- enabled-by: true
+  post-conditions:
+    Finding: None
+  pre-conditions:
+    First:
+    - Div
+    Second:
+    - Div
+    Third:
+    - Op
+    - Load
+    - Div
+    - Other
+    Fourth:
+    - Op
+    - Load
+    - Div
+    - Other
+    Fifth:
+    - Op
+    - Load
+    - Div
+    - Other
+    - Absent
+- enabled-by: true
+  post-conditions:
+    Finding: None
+  pre-conditions:
+    First:
+    - Div
+    Second:
+    - Op
+    - Load
+    Third:
+    - Div
+    Fourth:
+    - Absent
+    Fifth: N/A
+- enabled-by: true
+  post-conditions:
+    Finding: None
+  pre-conditions:
+    First:
+    - Div
+    Second:
+    - Op
+    - Load
+    Third:
+    - Div
+    Fourth:
+    - Op
+    - Load
+    - Div
+    - Other
+    Fifth:
+    - Op
+    - Load
+    - Div
+    - Other
+    - Absent
+- enabled-by: true
+  post-conditions:
+    Finding: None
+  pre-conditions:
+    First:
+    - Div
+    Second:
+    - Op
+    - Load
+    Third:
+    - Op
+    - Load
+    Fourth:
+    - Op
+    - Load
+    - Other
+    Fifth:
+    - Op
+    - Load
+    - Other
+- enabled-by: true
+  post-conditions:
+    Finding: None
+  pre-conditions:
+    First:
+    - Div
+    Second:
+    - Op
+    - Load
+    Third:
+    - Other
+    Fourth:
+    - Div
+    - Other
+    Fifth:
+    - Op
+    - Load
+    - Div
+    - Other
+    - Absent
+- enabled-by: true
+  post-conditions:
+    Finding: None
+  pre-conditions:
+    First:
+    - Div
+    Second:
+    - Op
+    - Load
+    Third:
+    - Other
+    Fourth:
+    - Op
+    - Load
+    Fifth:
+    - Op
+    - Load
+    - Other
+- enabled-by: true
+  post-conditions:
+    Finding: None
+  pre-conditions:
+    First:
+    - Div
+    Second:
+    - Other
+    Third:
+    - Div
+    - Other
+    Fourth:
+    - Absent
+    Fifth: N/A
+- enabled-by: true
+  post-conditions:
+    Finding: None
+  pre-conditions:
+    First:
+    - Div
+    Second:
+    - Other
+    Third:
+    - Div
+    - Other
+    Fourth:
+    - Op
+    - Load
+    - Div
+    - Other
+    Fifth:
+    - Op
+    - Load
+    - Div
+    - Other
+    - Absent
+- enabled-by: true
+  post-conditions:
+    Finding: None
+  pre-conditions:
+    First:
+    - Div
+    Second:
+    - Other
+    Third:
+    - Op
+    - Load
+    Fourth:
+    - Div
+    - Other
+    Fifth:
+    - Op
+    - Load
+    - Div
+    - Other
+    - Absent
+- enabled-by: true
+  post-conditions:
+    Finding: None
+  pre-conditions:
+    First:
+    - Div
+    Second:
+    - Other
+    Third:
+    - Op
+    - Load
+    Fourth:
+    - Op
+    - Load
+    Fifth:
+    - Op
+    - Load
+    - Other
+- enabled-by: true
+  post-conditions:
+    Finding: None
+  pre-conditions:
+    First:
+    - Other
+    Second:
+    - Absent
+    Third: N/A
+    Fourth: N/A
+    Fifth: N/A
+- enabled-by: true
+  post-conditions:
+    Finding: None
+  pre-conditions:
+    First:
+    - Other
+    Second:
+    - Op
+    - Load
+    - Div
+    - Other
+    Third:
+    - Absent
+    Fourth: N/A
+    Fifth: N/A
+- enabled-by: true
+  post-conditions:
+    Finding: None
+  pre-conditions:
+    First:
+    - Other
+    Second:
+    - Op
+    - Load
+    - Div
+    - Other
+    Third:
+    - Op
+    - Load
+    - Div
+    - Other
+    Fourth:
+    - Absent
+    Fifth: N/A
+- enabled-by: true
+  post-conditions:
+    Finding: None
+  pre-conditions:
+    First:
+    - Other
+    Second:
+    - Op
+    - Load
+    - Div
+    - Other
+    Third:
+    - Op
+    - Load
+    - Div
+    - Other
+    Fourth:
+    - Op
+    - Load
+    - Div
+    - Other
+    Fifth:
+    - Op
+    - Load
+    - Div
+    - Other
+    - Absent
+- enabled-by: true
+  post-conditions:
+    Finding: Possible
+  pre-conditions:
+    First:
+    - Div
+    Second:
+    - Absent
+    Third: N/A
+    Fourth: N/A
+    Fifth: N/A
+- enabled-by: true
+  post-conditions:
+    Finding: Possible
+  pre-conditions:
+    First:
+    - Div
+    Second:
+    - Op
+    - Load
+    Third:
+    - Op
+    - Load
+    Fourth:
+    - Op
+    - Load
+    - Other
+    Fifth:
+    - Absent
+- enabled-by: true
+  post-conditions:
+    Finding: Possible
+  pre-conditions:
+    First:
+    - Div
+    Second:
+    - Op
+    - Load
+    Third:
+    - Op
+    - Load
+    - Other
+    Fourth:
+    - Absent
+    Fifth: N/A
+- enabled-by: true
+  post-conditions:
+    Finding: Possible
+  pre-conditions:
+    First:
+    - Div
+    Second:
+    - Op
+    - Load
+    Third:
+    - Other
+    Fourth:
+    - Op
+    - Load
+    Fifth:
+    - Absent
+- enabled-by: true
+  post-conditions:
+    Finding: Possible
+  pre-conditions:
+    First:
+    - Div
+    Second:
+    - Op
+    - Load
+    - Other
+    Third:
+    - Absent
+    Fourth: N/A
+    Fifth: N/A
+- enabled-by: true
+  post-conditions:
+    Finding: Possible
+  pre-conditions:
+    First:
+    - Div
+    Second:
+    - Other
+    Third:
+    - Op
+    - Load
+    Fourth:
+    - Absent
+    Fifth: N/A
+- enabled-by: true
+  post-conditions:
+    Finding: Possible
+  pre-conditions:
+    First:
+    - Div
+    Second:
+    - Other
+    Third:
+    - Op
+    - Load
+    Fourth:
+    - Op
+    - Load
+    Fifth:
+    - Absent
+- enabled-by: true
+  post-conditions:
+    Finding: Definite
+  pre-conditions:
+    First:
+    - Div
+    Second:
+    - Op
+    - Load
+    Third:
+    - Op
+    - Load
+    Fourth:
+    - Div
+    Fifth:
+    - Op
+    - Load
+    - Div
+    - Other
+    - Absent
+- enabled-by: true
+  post-conditions:
+    Finding: Definite
+  pre-conditions:
+    First:
+    - Div
+    Second:
+    - Op
+    - Load
+    Third:
+    - Op
+    - Load
+    Fourth:
+    - Op
+    - Load
+    - Other
+    Fifth:
+    - Div
+- enabled-by: true
+  post-conditions:
+    Finding: Definite
+  pre-conditions:
+    First:
+    - Div
+    Second:
+    - Op
+    - Load
+    Third:
+    - Other
+    Fourth:
+    - Op
+    - Load
+    Fifth:
+    - Div
+- enabled-by: true
+  post-conditions:
+    Finding: Definite
+  pre-conditions:
+    First:
+    - Div
+    Second:
+    - Other
+    Third:
+    - Op
+    - Load
+    Fourth:
+    - Op
+    - Load
+    Fifth:
+    - Div
+type: requirement

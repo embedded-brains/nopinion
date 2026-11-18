@@ -1,0 +1,399 @@
+SPDX-License-Identifier: CC-BY-SA-4.0 OR BSD-2-Clause
+copyrights:
+- Copyright (C) 2026 embedded brains GmbH & Co. KG
+enabled-by: true
+functional-type: action
+links:
+- role: requirement-refinement
+  uid: decode
+post-conditions:
+- name: Icc
+  states:
+  - name: Modified
+    test-code: |
+      T_true( ctx->modifies );
+    text: |
+      The errata checker shall classify the instruction as an instruction which
+      modifies the integer condition codes.
+  - name: Unchanged
+    test-code: |
+      T_false( ctx->modifies );
+    text: |
+      The errata checker shall classify the instruction as an instruction which does
+      not modify the integer condition codes.
+  test-epilogue: null
+  test-prologue: null
+pre-conditions:
+- name: Instruction
+  states:
+  - name: Add
+    test-code: |
+      ctx->instruction = TxFormat3Reg( 2, 0x00, TX_G0, TX_G1, TX_O0 );
+    text: |
+      While the instruction is an ADD instruction.
+  - name: And
+    test-code: |
+      ctx->instruction = TxFormat3Reg( 2, 0x01, TX_G0, TX_G1, TX_O0 );
+    text: |
+      While the instruction is an AND instruction.
+  - name: Or
+    test-code: |
+      ctx->instruction = TxFormat3Reg( 2, 0x02, TX_G0, TX_G1, TX_O0 );
+    text: |
+      While the instruction is an OR instruction.
+  - name: Xor
+    test-code: |
+      ctx->instruction = TxFormat3Reg( 2, 0x03, TX_G0, TX_G1, TX_O0 );
+    text: |
+      While the instruction is an XOR instruction.
+  - name: Sub
+    test-code: |
+      ctx->instruction = TxFormat3Reg( 2, 0x04, TX_G0, TX_G1, TX_O0 );
+    text: |
+      While the instruction is an SUB instruction.
+  - name: Andn
+    test-code: |
+      ctx->instruction = TxFormat3Reg( 2, 0x05, TX_G0, TX_G1, TX_O0 );
+    text: |
+      While the instruction is an ANDN instruction.
+  - name: Orn
+    test-code: |
+      ctx->instruction = TxFormat3Reg( 2, 0x06, TX_G0, TX_G1, TX_O0 );
+    text: |
+      While the instruction is an ORN instruction.
+  - name: Xnor
+    test-code: |
+      ctx->instruction = TxFormat3Reg( 2, 0x07, TX_G0, TX_G1, TX_O0 );
+    text: |
+      While the instruction is an XNOR instruction.
+  - name: Addx
+    test-code: |
+      ctx->instruction = TxFormat3Reg( 2, 0x08, TX_G0, TX_G1, TX_O0 );
+    text: |
+      While the instruction is an ADDX instruction.
+  - name: Umul
+    test-code: |
+      ctx->instruction = TxFormat3Reg( 2, 0x0a, TX_G0, TX_G1, TX_O0 );
+    text: |
+      While the instruction is an UMUL instruction.
+  - name: Smul
+    test-code: |
+      ctx->instruction = TxFormat3Reg( 2, 0x0b, TX_G0, TX_G1, TX_O0 );
+    text: |
+      While the instruction is an SMUL instruction.
+  - name: Subx
+    test-code: |
+      ctx->instruction = TxFormat3Reg( 2, 0x0c, TX_G0, TX_G1, TX_O0 );
+    text: |
+      While the instruction is an SUBX instruction.
+  - name: Udiv
+    test-code: |
+      ctx->instruction = TxFormat3Reg( 2, 0x0e, TX_G0, TX_G1, TX_O0 );
+    text: |
+      While the instruction is an UDIV instruction.
+  - name: Sdiv
+    test-code: |
+      ctx->instruction = TxFormat3Reg( 2, 0x0f, TX_G0, TX_G1, TX_O0 );
+    text: |
+      While the instruction is an SDIV instruction.
+  - name: Addcc
+    test-code: |
+      ctx->instruction = TxFormat3Reg( 2, 0x10, TX_G0, TX_G1, TX_O0 );
+    text: |
+      While the instruction is an ADDcc instruction.
+  - name: Andcc
+    test-code: |
+      ctx->instruction = TxFormat3Reg( 2, 0x11, TX_G0, TX_G1, TX_O0 );
+    text: |
+      While the instruction is an ANDcc instruction.
+  - name: Orcc
+    test-code: |
+      ctx->instruction = TxFormat3Reg( 2, 0x12, TX_G0, TX_G1, TX_O0 );
+    text: |
+      While the instruction is an ORcc instruction.
+  - name: Xorcc
+    test-code: |
+      ctx->instruction = TxFormat3Reg( 2, 0x13, TX_G0, TX_G1, TX_O0 );
+    text: |
+      While the instruction is an XORcc instruction.
+  - name: Subcc
+    test-code: |
+      ctx->instruction = TxFormat3Reg( 2, 0x14, TX_G0, TX_G1, TX_O0 );
+    text: |
+      While the instruction is an SUBcc instruction.
+  - name: Andncc
+    test-code: |
+      ctx->instruction = TxFormat3Reg( 2, 0x15, TX_G0, TX_G1, TX_O0 );
+    text: |
+      While the instruction is an ANDNcc instruction.
+  - name: Orncc
+    test-code: |
+      ctx->instruction = TxFormat3Reg( 2, 0x16, TX_G0, TX_G1, TX_O0 );
+    text: |
+      While the instruction is an ORNcc instruction.
+  - name: Xnorcc
+    test-code: |
+      ctx->instruction = TxFormat3Reg( 2, 0x17, TX_G0, TX_G1, TX_O0 );
+    text: |
+      While the instruction is an XNORcc instruction.
+  - name: Addxcc
+    test-code: |
+      ctx->instruction = TxFormat3Reg( 2, 0x18, TX_G0, TX_G1, TX_O0 );
+    text: |
+      While the instruction is an ADDXcc instruction.
+  - name: Umulcc
+    test-code: |
+      ctx->instruction = TxFormat3Reg( 2, 0x1a, TX_G0, TX_G1, TX_O0 );
+    text: |
+      While the instruction is an UMULcc instruction.
+  - name: Smulcc
+    test-code: |
+      ctx->instruction = TxFormat3Reg( 2, 0x1b, TX_G0, TX_G1, TX_O0 );
+    text: |
+      While the instruction is an SMULcc instruction.
+  - name: Subxcc
+    test-code: |
+      ctx->instruction = TxFormat3Reg( 2, 0x1c, TX_G0, TX_G1, TX_O0 );
+    text: |
+      While the instruction is an SUBXcc instruction.
+  - name: Udivcc
+    test-code: |
+      ctx->instruction = TxFormat3Reg( 2, 0x1e, TX_G0, TX_G1, TX_O0 );
+    text: |
+      While the instruction is an UDIVcc instruction.
+  - name: Sdivcc
+    test-code: |
+      ctx->instruction = TxFormat3Reg( 2, 0x1f, TX_G0, TX_G1, TX_O0 );
+    text: |
+      While the instruction is an SDIVcc instruction.
+  - name: Taddcc
+    test-code: |
+      ctx->instruction = TxFormat3Reg( 2, 0x20, TX_G0, TX_G1, TX_O0 );
+    text: |
+      While the instruction is a TADDcc instruction.
+  - name: Tsubcc
+    test-code: |
+      ctx->instruction = TxFormat3Reg( 2, 0x21, TX_G0, TX_G1, TX_O0 );
+    text: |
+      While the instruction is a TSUBcc instruction.
+  - name: Taddcctv
+    test-code: |
+      ctx->instruction = TxFormat3Reg( 2, 0x22, TX_G0, TX_G1, TX_O0 );
+    text: |
+      While the instruction is a TADDccTV instruction.
+  - name: Tsubcctv
+    test-code: |
+      ctx->instruction = TxFormat3Reg( 2, 0x23, TX_G0, TX_G1, TX_O0 );
+    text: |
+      While the instruction is a TSUBccTV instruction.
+  - name: Mulscc
+    test-code: |
+      ctx->instruction = TxFormat3Reg( 2, 0x24, TX_G0, TX_G1, TX_O0 );
+    text: |
+      While the instruction is an MULScc instruction.
+  - name: Sll
+    test-code: |
+      ctx->instruction = TxFormat3Reg( 2, 0x25, TX_G0, TX_G1, TX_O0 );
+    text: |
+      While the instruction is an SLL instruction.
+  - name: Srl
+    test-code: |
+      ctx->instruction = TxFormat3Reg( 2, 0x26, TX_G0, TX_G1, TX_O0 );
+    text: |
+      While the instruction is an SRL instruction.
+  - name: Sra
+    test-code: |
+      ctx->instruction = TxFormat3Reg( 2, 0x27, TX_G0, TX_G1, TX_O0 );
+    text: |
+      While the instruction is an SRA instruction.
+  - name: Rdasr
+    test-code: |
+      ctx->instruction = TxFormat3Reg( 2, 0x28, TX_G0, TX_G1, TX_O0 );
+    text: |
+      While the instruction is an RDASR instruction.
+  - name: Rdpsr
+    test-code: |
+      ctx->instruction = TxFormat3Reg( 2, 0x29, TX_G0, TX_G1, TX_O0 );
+    text: |
+      While the instruction is an RDPSR instruction.
+  - name: Rdwim
+    test-code: |
+      ctx->instruction = TxFormat3Reg( 2, 0x2a, TX_G0, TX_G1, TX_O0 );
+    text: |
+      While the instruction is an RDWIM instruction.
+  - name: Rdtbr
+    test-code: |
+      ctx->instruction = TxFormat3Reg( 2, 0x2b, TX_G0, TX_G1, TX_O0 );
+    text: |
+      While the instruction is an RDTBR instruction.
+  - name: Wrasr
+    test-code: |
+      ctx->instruction = TxFormat3Reg( 2, 0x30, TX_G0, TX_G1, TX_O0 );
+    text: |
+      While the instruction is a WRASR instruction.
+  - name: Wrpsr
+    test-code: |
+      ctx->instruction = TxFormat3Reg( 2, 0x31, TX_G0, TX_G1, TX_O0 );
+    text: |
+      While the instruction is a WRPSR instruction.
+  - name: Wrwim
+    test-code: |
+      ctx->instruction = TxFormat3Reg( 2, 0x32, TX_G0, TX_G1, TX_O0 );
+    text: |
+      While the instruction is a WRWIM instruction.
+  - name: Wrtbr
+    test-code: |
+      ctx->instruction = TxFormat3Reg( 2, 0x33, TX_G0, TX_G1, TX_O0 );
+    text: |
+      While the instruction is a WRTBR instruction.
+  - name: Fpop1
+    test-code: |
+      ctx->instruction = TxFormat3Reg( 2, 0x34, TX_G0, TX_G1, TX_O0 );
+    text: |
+      While the instruction is an FPop1 instruction.
+  - name: Fpop2
+    test-code: |
+      ctx->instruction = TxFormat3Reg( 2, 0x35, TX_G0, TX_G1, TX_O0 );
+    text: |
+      While the instruction is an FPop2 instruction.
+  - name: Cpop1
+    test-code: |
+      ctx->instruction = TxFormat3Reg( 2, 0x36, TX_G0, TX_G1, TX_O0 );
+    text: |
+      While the instruction is a CPop1 instruction.
+  - name: Cpop2
+    test-code: |
+      ctx->instruction = TxFormat3Reg( 2, 0x37, TX_G0, TX_G1, TX_O0 );
+    text: |
+      While the instruction is a CPop2 instruction.
+  - name: Flush
+    test-code: |
+      ctx->instruction = TxFormat3Reg( 2, 0x3b, TX_G0, TX_G1, TX_O0 );
+    text: |
+      While the instruction is an FLUSH instruction.
+  - name: Save
+    test-code: |
+      ctx->instruction = TxFormat3Reg( 2, 0x3c, TX_G0, TX_G1, TX_O0 );
+    text: |
+      While the instruction is an SAVE instruction.
+  - name: Restore
+    test-code: |
+      ctx->instruction = TxFormat3Reg( 2, 0x3d, TX_G0, TX_G1, TX_O0 );
+    text: |
+      While the instruction is an RESTORE instruction.
+  - name: Undefined
+    test-code: |
+      ctx->instruction = TxFormat3Reg( 2, 0x09, TX_G0, TX_G1, TX_O0 );
+    text: |
+      While the instruction is an arithmetic instruction with an undefined op3 field.
+  test-epilogue: null
+  test-prologue: null
+rationale: |
+  Dimension Instruction covers the instructions of table F-3 of SPARC V8 which
+  transfer no control, 52 states.
+
+  Sections B.11 to B.19 of SPARC V8 state that the instructions with the cc
+  suffix modify the integer condition codes. Section B.29 states that WRPSR
+  writes the PSR, which holds the integer condition codes. JMPL, RETT and Ticc
+  transfer control, so the flow requirements specify them.
+
+  The test observes the class through sequence A of the incorrect annulation
+  erratum.
+references: []
+requirement-type: functional
+skip-reasons: {}
+test-action: |
+  ctx->modifies = TxProbeIcc( ctx->instruction );
+test-brief: null
+test-cleanup: null
+test-context:
+- brief: |
+    This member contains the instruction.
+  description: null
+  member: |
+    uint32_t instruction
+- brief: |
+    This member is true, if the probe found that the instruction modifies the
+    integer condition codes.
+  description: null
+  member: |
+    bool modifies
+test-context-support: null
+test-description: null
+test-header: null
+test-includes: []
+test-local-includes:
+- nopinion.h
+- tx-support.h
+test-prepare: null
+test-setup: null
+test-stop: null
+test-support: null
+test-target: nopinion/tests/tc-decode-icc.c
+test-teardown: null
+text: |
+  ${.:text-template}
+transition-map:
+- enabled-by: true
+  post-conditions:
+    Icc: Modified
+  pre-conditions:
+    Instruction:
+    - Addcc
+    - Andcc
+    - Orcc
+    - Xorcc
+    - Subcc
+    - Andncc
+    - Orncc
+    - Xnorcc
+    - Addxcc
+    - Umulcc
+    - Smulcc
+    - Subxcc
+    - Udivcc
+    - Sdivcc
+    - Taddcc
+    - Tsubcc
+    - Taddcctv
+    - Tsubcctv
+    - Mulscc
+    - Wrpsr
+- enabled-by: true
+  post-conditions:
+    Icc: Unchanged
+  pre-conditions:
+    Instruction:
+    - Add
+    - And
+    - Or
+    - Xor
+    - Sub
+    - Andn
+    - Orn
+    - Xnor
+    - Addx
+    - Umul
+    - Smul
+    - Subx
+    - Udiv
+    - Sdiv
+    - Sll
+    - Srl
+    - Sra
+    - Rdasr
+    - Rdpsr
+    - Rdwim
+    - Rdtbr
+    - Wrasr
+    - Wrwim
+    - Wrtbr
+    - Fpop1
+    - Fpop2
+    - Cpop1
+    - Cpop2
+    - Flush
+    - Save
+    - Restore
+    - Undefined
+type: requirement

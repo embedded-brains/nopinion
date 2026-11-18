@@ -1,0 +1,22 @@
+SPDX-License-Identifier: CC-BY-SA-4.0 OR BSD-2-Clause
+copyrights:
+- Copyright (C) 2026 embedded brains GmbH & Co. KG
+enabled-by: true
+functional-type: function
+links:
+- role: requirement-refinement
+  uid: group
+- location: section 4.1
+  role: reference
+  uid: /ref/ip/gaisler/grlib-tn-0016-1-0
+- location: section 4.2
+  role: reference
+  uid: /ref/ip/gaisler/grlib-tn-0016-1-0
+rationale: null
+references: []
+requirement-type: functional
+text: |
+  The errata checker shall report a ${../glossary/finding:/term} for each STFSR
+  instruction which directly follows an FPop1 instruction and for each STFSR
+  instruction which follows an STFSR instruction within three instructions.
+type: requirement

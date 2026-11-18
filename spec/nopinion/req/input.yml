@@ -1,0 +1,17 @@
+SPDX-License-Identifier: CC-BY-SA-4.0 OR BSD-2-Clause
+copyrights:
+- Copyright (C) 2026 embedded brains GmbH & Co. KG
+enabled-by: true
+functional-type: function
+links:
+- role: requirement-refinement
+  uid: group
+rationale: |
+  The ELF specification for SPARC and the format of the archive file of the GNU
+  binutils define the input.
+references: []
+requirement-type: functional
+text: |
+  The errata checker shall check each ${../glossary/code-section:/term} of an
+  ELF32 big-endian SPARC file and of each member of an archive of such files.
+type: requirement

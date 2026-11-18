@@ -1,0 +1,361 @@
+SPDX-License-Identifier: CC-BY-SA-4.0 OR BSD-2-Clause
+copyrights:
+- Copyright (C) 2026 embedded brains GmbH & Co. KG
+enabled-by: true
+functional-type: action
+links:
+- role: requirement-refinement
+  uid: input
+post-conditions:
+- name: Error
+  states:
+  - name: None
+    test-code: |
+      T_eq_str( TxErrors(), "" );
+    text: |
+      The errata checker shall report no error.
+  - name: NotElf
+    test-code: |
+      char expected[ 64 ];
+
+      (void) snprintf(
+        expected,
+        sizeof( expected ),
+        "nopinion: t.o(%s): not an ELF file\n",
+        ctx->member
+      );
+      T_eq_str( TxErrors(), expected );
+    text: |
+      The errata checker shall report the error "not an ELF file" for the member.
+  - name: BadLongName
+    test-code: |
+      T_eq_str( TxErrors(), "nopinion: t.o: bad long member name\n" );
+    text: |
+      The errata checker shall report the error "bad long member name" for the
+      archive.
+  - name: Truncated
+    test-code: |
+      T_eq_str( TxErrors(), "nopinion: t.o: truncated archive\n" );
+    text: |
+      The errata checker shall report the error "truncated archive" for the archive.
+  test-epilogue: null
+  test-prologue: null
+- name: Member
+  states:
+  - name: Checked
+    test-code: |
+      char prefix[ 64 ];
+
+      (void) snprintf(
+        prefix,
+        sizeof( prefix ),
+        "t.o(%s): .text+0x0 <f+0x0>: TN-0009 ",
+        ctx->member
+      );
+      T_eq_int( strncmp( ctx->report, prefix, strlen( prefix ) ), 0 );
+    text: |
+      The errata checker shall check the member and name it in the report.
+  - name: NotChecked
+    test-code: |
+      T_eq_str( ctx->report, "" );
+    text: |
+      The errata checker shall check no member.
+  test-epilogue: null
+  test-prologue: null
+pre-conditions:
+- name: Before
+  states:
+  - name: None
+    test-code: |
+      /* No member precedes the member */
+    text: |
+      While no member precedes the member.
+  - name: SymbolTable
+    test-code: |
+      TxArchiveAdd( &ctx->archive, "/", (const uint8_t *) "\0\0\0\0", 4, 0 );
+    text: |
+      While the symbol table of the archive with an even size precedes the member.
+  - name: SymbolTableOdd
+    test-code: |
+      TxArchiveAdd( &ctx->archive, "/", (const uint8_t *) "\0\0\0\0\0", 5, 0 );
+    text: |
+      While the symbol table of the archive with an odd size precedes the member.
+  - name: SymbolTable64
+    test-code: |
+      TxArchiveAdd(
+        &ctx->archive,
+        "/SYM64/",
+        (const uint8_t *) "\0\0\0\0\0\0\0\0",
+        8,
+        0
+      );
+    text: |
+      While the 64-bit symbol table of the archive precedes the member.
+  test-epilogue: null
+  test-prologue: null
+- name: Name
+  states:
+  - name: Short
+    test-code: |
+      ctx->name = "a.o/";
+      ctx->member = "a.o";
+    text: |
+      While the member header holds the name of the member.
+  - name: ShortFull
+    test-code: |
+      ctx->name = "abcdefghijklmn.o";
+      ctx->member = "abcdefghijklmn.o";
+    text: |
+      While the member header holds the name of the member in all 16 bytes of the
+      name field.
+  - name: Long
+    test-code: |
+      TxArchiveAdd(
+        &ctx->archive,
+        "//",
+        (const uint8_t *) "long-member-name.o/\n",
+        20,
+        0
+      );
+      ctx->name = "/0";
+      ctx->member = "long-member-name.o";
+    text: |
+      While the member header refers to the name of the member in the long name
+      table.
+  - name: LongNewline
+    test-code: |
+      TxArchiveAdd(
+        &ctx->archive,
+        "//",
+        (const uint8_t *) "long-member-name.o\n",
+        19,
+        0
+      );
+      ctx->name = "/0";
+      ctx->member = "long-member-name.o";
+    text: |
+      While the member header refers to the name of the member in the long name
+      table, while the name ends with a newline.
+  - name: NoTable
+    test-code: |
+      ctx->name = "/0";
+    text: |
+      While the member header refers to a long name and the archive has no long name
+      table.
+  - name: Beyond
+    test-code: |
+      TxArchiveAdd(
+        &ctx->archive,
+        "//",
+        (const uint8_t *) "long-member-name.o/\n",
+        20,
+        0
+      );
+      ctx->name = "/99";
+    text: |
+      While the member header refers to a long name beyond the long name table.
+  test-epilogue: null
+  test-prologue: null
+- name: Content
+  states:
+  - name: Elf
+    test-code: |
+      ctx->elf = true;
+    text: |
+      While the member is a valid ELF file.
+  - name: Other
+    test-code: |
+      ctx->elf = false;
+    text: |
+      While the member is no ELF file.
+  test-epilogue: null
+  test-prologue: null
+- name: Size
+  states:
+  - name: Valid
+    test-code: |
+      ctx->excess = 0;
+    text: |
+      While the size field of the member header matches the member.
+  - name: Truncated
+    test-code: |
+      ctx->excess = 1000;
+    text: |
+      While the size field of the member header exceeds the archive.
+  - name: Empty
+    test-code: |
+      ctx->empty = true;
+    text: |
+      While the archive holds no member after the members before it.
+  test-epilogue: null
+  test-prologue: null
+rationale: |
+  Dimension Before covers the members of an archive which hold no ELF file, 4
+  states.
+
+  Dimension Name covers the forms of a member name, 6 states.
+
+  Dimension Content covers the content of a member, 2 states.
+
+  Dimension Size covers the size field of a member header, 3 states.
+
+  The archive format of the GNU binutils starts with the magic string !<arch> and
+  a newline. A member header of 60 bytes precedes each member. A member of odd
+  size has one byte of padding. The member / holds the symbol table. The member
+  // holds the long names. The name /N refers to the long name at the offset N of
+  that table.
+
+  The arrangement appends the members of Before and the long name table of Name
+  before the member.
+references: []
+requirement-type: functional
+skip-reasons: {}
+test-action: |
+  if ( !ctx->empty ) {
+    uint8_t buf[ 4096 ];
+    size_t  size;
+
+    if ( ctx->elf ) {
+      TxImage image;
+
+      TxImageInit( &image );
+      TxAppend( &image, TxSt() );
+      TxAppend( &image, TxAdd() );
+      TxAppend( &image, TxSt() );
+      size = TxBuildElf( &image, buf, sizeof( buf ) );
+    } else {
+      memcpy( buf, "text", 4 );
+      size = 4;
+    }
+
+    TxArchiveAdd( &ctx->archive, ctx->name, buf, size, ctx->excess );
+  }
+
+  ctx->report = TxCheckBuffer(
+    ctx->archive.buf,
+    ctx->archive.size,
+    NOTE_0009
+  );
+test-brief: null
+test-cleanup: null
+test-context:
+- brief: |
+    This member contains the archive.
+  description: null
+  member: |
+    TxArchive archive
+- brief: |
+    This member contains the name field of the member header.
+  description: null
+  member: |
+    const char *name
+- brief: |
+    This member contains the name of the member in the report.
+  description: null
+  member: |
+    const char *member
+- brief: |
+    This member is true, if the member is an ELF file.
+  description: null
+  member: |
+    bool elf
+- brief: |
+    This member is true, if the archive holds no further member.
+  description: null
+  member: |
+    bool empty
+- brief: |
+    This member contains the excess of the size field.
+  description: null
+  member: |
+    size_t excess
+- brief: |
+    This member references the report of the errata checker.
+  description: null
+  member: |
+    const char *report
+test-context-support: null
+test-description: null
+test-header: null
+test-includes:
+- stdio.h
+- string.h
+test-local-includes:
+- nopinion.h
+- tx-support.h
+test-prepare: |
+  TxArchiveInit( &ctx->archive );
+  ctx->name = "a.o/";
+  ctx->member = "a.o";
+  ctx->empty = false;
+test-setup: null
+test-stop: null
+test-support: null
+test-target: nopinion/tests/tc-input-archive.c
+test-teardown: null
+text: |
+  ${.:text-template}
+transition-map:
+- enabled-by: true
+  post-conditions:
+    Error: None
+    Member: Checked
+  pre-conditions:
+    Before: all
+    Name:
+    - Short
+    - ShortFull
+    - Long
+    - LongNewline
+    Content:
+    - Elf
+    Size:
+    - Valid
+- enabled-by: true
+  post-conditions:
+    Error: NotElf
+    Member: NotChecked
+  pre-conditions:
+    Before: all
+    Name:
+    - Short
+    - ShortFull
+    - Long
+    - LongNewline
+    Content:
+    - Other
+    Size:
+    - Valid
+- enabled-by: true
+  post-conditions:
+    Error: BadLongName
+    Member: NotChecked
+  pre-conditions:
+    Before: all
+    Name:
+    - NoTable
+    - Beyond
+    Content: all
+    Size:
+    - Valid
+- enabled-by: true
+  post-conditions:
+    Error: Truncated
+    Member: NotChecked
+  pre-conditions:
+    Before: all
+    Name: all
+    Content: all
+    Size:
+    - Truncated
+- enabled-by: true
+  post-conditions:
+    Error: None
+    Member: NotChecked
+  pre-conditions:
+    Before: all
+    Name: all
+    Content: N/A
+    Size:
+    - Empty
+type: requirement
