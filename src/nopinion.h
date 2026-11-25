@@ -104,6 +104,7 @@ typedef struct {
   size_t         member_length;
   const char    *section;
   uint32_t       address;
+  size_t         file_offset;
   uint32_t       alignment;
   bool           relocatable;
   const uint8_t *code;
@@ -133,6 +134,12 @@ typedef struct {
   bool         quiet;
   bool         verbose;
   bool         include_indirect;
+  bool         sarif;
+  const char  *base_id;
+  size_t       base_id_length;
+  char        *base;
+  size_t       base_length;
+  const char  *relative;
 } options;
 
 typedef struct {
@@ -234,6 +241,10 @@ void report(
   const long            *path,
   int                    path_length
 );
+
+void report_begin( void );
+
+void report_end( void );
 
 void error(
   const char *file,

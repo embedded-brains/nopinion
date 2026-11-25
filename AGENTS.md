@@ -62,7 +62,7 @@ of the `rtems` item.
 | sequence checks over a path of the flow | the table `sequence_checks` in `src/flow.c` |
 | checks of one instruction and its neighbours | the dispatch in `check_section()` |
 | one unit per erratum | `src/tn00*.c`, `src/asi1c.c`, `src/powerdown.c` |
-| the report line, `-v`, `-q`, `-s` | `src/report.c` |
+| the report line, the SARIF log of `-f sarif`, `-v`, `-q`, `-s` | `src/report.c` |
 | the options and the part table of `-p` | `src/cli.c` |
 | the test support, hand-written | `tests/tx-support.c`, `tests/tx-wrap.c` |
 

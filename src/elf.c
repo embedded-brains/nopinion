@@ -49,6 +49,7 @@ static int compare_symbols( const void *a, const void *b )
 typedef struct {
   const uint8_t *data;
   size_t         size;
+  size_t         offset;
   const char    *file;
   const char    *member;
   size_t         member_length;
@@ -274,6 +275,7 @@ static void check_elf( const elf_input *in )
     ctx.member_length = in->member_length;
     ctx.section = (const char *) d + stroff + name;
     ctx.address = get_be32( sh + 12 );
+    ctx.file_offset = in->offset + off;
     ctx.alignment = get_be32( sh + 32 );
     ctx.relocatable = type == ET_REL;
     ctx.code = d + off;
@@ -347,6 +349,7 @@ static void check_archive( const char *file, const uint8_t *data, size_t size )
       name_length = member_name_length( name, long_names_size - index );
       in.data = data + pos;
       in.size = member_size;
+      in.offset = pos;
       in.file = file;
       in.member = name;
       in.member_length = name_length;
@@ -355,6 +358,7 @@ static void check_archive( const char *file, const uint8_t *data, size_t size )
       name_length = member_name_length( name, 16 );
       in.data = data + pos;
       in.size = member_size;
+      in.offset = pos;
       in.file = file;
       in.member = name;
       in.member_length = name_length;
@@ -372,7 +376,7 @@ void check_buffer( const char *file, const uint8_t *data, size_t size )
   } else if ( size >= 8 && memcmp( data, "!<thin>\n", 8 ) == 0 ) {
     error( file, NULL, 0, "thin archives are not supported" );
   } else {
-    elf_input in = { data, size, file, NULL, 0 };
+    elf_input in = { data, size, 0, file, NULL, 0 };
     check_elf( &in );
   }
 }

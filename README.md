@@ -29,6 +29,12 @@ and the SPARC Architecture Manual Version 8.
 The option `-p` selects the errata of one part: `gr712rc`, `gr740`,
 `leon3ft-rtax`, `ut699`, `ut699e` or `ut700`.
 
+The option `-f sarif` writes the report as a log of the Static Analysis
+Results Interchange Format (SARIF) Version 2.1.0. With the option
+`-b NAME=DIR`, the log gives the URI of each file below the directory `DIR`
+relative to the URI base id `NAME`. The log does not hold the absolute path
+of `DIR`, so a reader of the log resolves `NAME`.
+
 ## Build
 
 nopinion is one C program without dependencies beyond a C11 compiler and

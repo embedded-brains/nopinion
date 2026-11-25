@@ -2,6 +2,7 @@
 
 /* Copyright (C) 2026 embedded brains GmbH & Co. KG */
 
+#include <errno.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
@@ -124,12 +125,18 @@ static void usage( FILE *out )
 {
   fprintf(
     out,
-    "usage: nopinion [-p PART] [-t ERRATA] [-i] [-q] [-s] [-v] FILE...\n"
+    "usage: nopinion [-b NAME=DIR] [-f FORMAT] [-p PART] [-t ERRATA] [-i] [-q]\n"
+    "                [-s] [-v] FILE...\n"
     "\n"
     "Scans SPARC ELF files and archives for the instruction sequences of\n"
     "the errata GRLIB-TN-0009, -0011, -0012, -0013, -0016 and -0018, of\n"
     "the GR712RC errata 8 and 19, and of the GR740 erratum 20-1.\n"
     "\n"
+    "  -b NAME=DIR\n"
+    "             in a SARIF log, give the URI of each file below the\n"
+    "             directory relative to the URI base id NAME\n"
+    "  -f FORMAT  write the report as text (default) or as a SARIF 2.1.0\n"
+    "             log: text or sarif\n"
     "  -p PART    check only the errata which affect the part: gr712rc,\n"
     "             gr740, leon3ft-rtax, ut699, ut699e or ut700\n"
     "  -t ERRATA  comma-separated list of errata to check, for example\n"
@@ -145,7 +152,58 @@ static void usage( FILE *out )
   );
 }
 
-int nopinion_main( int argc, char **argv, FILE *out, FILE *err )
+/* Selects the base directory of the option -b NAME=DIR */
+static int set_base( const char *arg, FILE *err )
+{
+  const char *eq = strchr( arg, '=' );
+
+  if ( eq == NULL || eq == arg ) {
+    usage( err );
+    return 2;
+  }
+
+  free( opts.base );
+  opts.base = realpath( eq + 1, NULL );
+
+  if ( opts.base == NULL ) {
+    error( eq + 1, NULL, 0, strerror( errno ) );
+    return 2;
+  }
+
+  opts.base_id = arg;
+  opts.base_id_length = (size_t) ( eq - arg );
+
+  /* The real path of the root directory is the only one with a final slash */
+  opts.base_length = strcmp( opts.base, "/" ) == 0 ? 0 : strlen( opts.base );
+  return 0;
+}
+
+/*
+ * Sets the path relative to the base directory of the file, or NULL, if the
+ * real path of the file is not below the base directory.  Returns the real
+ * path to free.
+ */
+static char *set_relative( const char *file )
+{
+  char *real = NULL;
+
+  opts.relative = NULL;
+
+  if ( opts.base != NULL ) {
+    real = realpath( file, NULL );
+
+    if (
+      real != NULL && strncmp( real, opts.base, opts.base_length ) == 0 &&
+      real[ opts.base_length ] == '/'
+    ) {
+      opts.relative = real + opts.base_length + 1;
+    }
+  }
+
+  return real;
+}
+
+static int run( int argc, char **argv, FILE *out, FILE *err )
 {
   bool         print_statistics = false;
   unsigned int notes = NOTE_ALL;
@@ -160,8 +218,23 @@ int nopinion_main( int argc, char **argv, FILE *out, FILE *err )
   opterr = 0;
   optind = 0;
 
-  while ( ( opt = getopt( argc, argv, "hip:qst:v" ) ) != -1 ) {
+  while ( ( opt = getopt( argc, argv, "b:f:hip:qst:v" ) ) != -1 ) {
     switch ( opt ) {
+      case 'b':
+        if ( set_base( optarg, err ) != 0 ) {
+          return 2;
+        }
+        break;
+      case 'f':
+        if ( strcmp( optarg, "sarif" ) == 0 ) {
+          opts.sarif = true;
+        } else if ( strcmp( optarg, "text" ) == 0 ) {
+          opts.sarif = false;
+        } else {
+          usage( err );
+          return 2;
+        }
+        break;
       case 'h':
         usage( out );
         return 0;
@@ -209,9 +282,16 @@ int nopinion_main( int argc, char **argv, FILE *out, FILE *err )
     return 2;
   }
 
+  report_begin();
+
   for ( i = optind; i < argc; ++i ) {
+    char *real = set_relative( argv[ i ] );
+
     check_file( argv[ i ] );
+    free( real );
   }
+
+  report_end();
 
   if ( print_statistics ) {
     fprintf(
@@ -228,4 +308,13 @@ int nopinion_main( int argc, char **argv, FILE *out, FILE *err )
   }
 
   return stats.definite_count + stats.possible_count > 0 ? 1 : 0;
+}
+
+int nopinion_main( int argc, char **argv, FILE *out, FILE *err )
+{
+  int status = run( argc, argv, out, err );
+
+  free( opts.base );
+  opts.base = NULL;
+  return status;
 }
