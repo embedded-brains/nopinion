@@ -59,6 +59,11 @@
 
 typedef enum {
   NopinionReqCliOptions_Pre_Option_None,
+  NopinionReqCliOptions_Pre_Option_BaseNoName,
+  NopinionReqCliOptions_Pre_Option_BaseNoDirectory,
+  NopinionReqCliOptions_Pre_Option_BaseMissing,
+  NopinionReqCliOptions_Pre_Option_FormatText,
+  NopinionReqCliOptions_Pre_Option_FormatUnknown,
   NopinionReqCliOptions_Pre_Option_Help,
   NopinionReqCliOptions_Pre_Option_Indirect,
   NopinionReqCliOptions_Pre_Option_Quiet,
@@ -108,6 +113,7 @@ typedef enum {
 typedef enum {
   NopinionReqCliOptions_Post_Errors_Empty,
   NopinionReqCliOptions_Post_Errors_Usage,
+  NopinionReqCliOptions_Post_Errors_BaseMessage,
   NopinionReqCliOptions_Post_Errors_Message,
   NopinionReqCliOptions_Post_Errors_Statistics,
   NopinionReqCliOptions_Post_Errors_MessageStatistics,
@@ -237,6 +243,11 @@ static NopinionReqCliOptions_Context NopinionReqCliOptions_Instance;
 
 static const char *const NopinionReqCliOptions_PreDesc_Option[] = {
   "None",
+  "BaseNoName",
+  "BaseNoDirectory",
+  "BaseMissing",
+  "FormatText",
+  "FormatUnknown",
   "Help",
   "Indirect",
   "Quiet",
@@ -275,6 +286,57 @@ static void NopinionReqCliOptions_Pre_Option_Prepare(
        * While no option is given.
        */
       static const char *const options[] = { NULL };
+
+      ctx->options = options;
+      break;
+    }
+
+    case NopinionReqCliOptions_Pre_Option_BaseNoName: {
+      /*
+       * While the option -b names no URI base id.
+       */
+      static const char *const options[] = { "-b", "=.", NULL };
+
+      ctx->options = options;
+      break;
+    }
+
+    case NopinionReqCliOptions_Pre_Option_BaseNoDirectory: {
+      /*
+       * While the argument of the option -b holds no equals sign.
+       */
+      static const char *const options[] = { "-b", "PKG", NULL };
+
+      ctx->options = options;
+      break;
+    }
+
+    case NopinionReqCliOptions_Pre_Option_BaseMissing: {
+      /*
+       * While the option -b names a directory which does not exist.
+       */
+      static const char *const options[] =
+        { "-b", "PKG=tx-no-such-dir", NULL };
+
+      ctx->options = options;
+      break;
+    }
+
+    case NopinionReqCliOptions_Pre_Option_FormatText: {
+      /*
+       * While the option -f text is given.
+       */
+      static const char *const options[] = { "-f", "text", NULL };
+
+      ctx->options = options;
+      break;
+    }
+
+    case NopinionReqCliOptions_Pre_Option_FormatUnknown: {
+      /*
+       * While the option -f names an unknown format.
+       */
+      static const char *const options[] = { "-f", "xml", NULL };
 
       ctx->options = options;
       break;
@@ -656,6 +718,18 @@ static void NopinionReqCliOptions_Post_Errors_Check(
       break;
     }
 
+    case NopinionReqCliOptions_Post_Errors_BaseMessage: {
+      /*
+       * The errata checker shall write the error message of the missing
+       * directory of the option -b to the standard error.
+       */
+      T_eq_str(
+        ctx->err,
+        "nopinion: tx-no-such-dir: No such file or directory\n"
+      );
+      break;
+    }
+
     case NopinionReqCliOptions_Post_Errors_Message: {
       /*
        * The errata checker shall write the error message of the missing file
@@ -849,6 +923,9 @@ NopinionReqCliOptions_Entries[] = {
   { 0, 0, 0, NopinionReqCliOptions_Post_Status_Error,
     NopinionReqCliOptions_Post_Output_Empty,
     NopinionReqCliOptions_Post_Errors_Message },
+  { 0, 0, 0, NopinionReqCliOptions_Post_Status_Error,
+    NopinionReqCliOptions_Post_Output_Empty,
+    NopinionReqCliOptions_Post_Errors_BaseMessage },
   { 0, 0, 0, NopinionReqCliOptions_Post_Status_Success,
     NopinionReqCliOptions_Post_Output_Usage,
     NopinionReqCliOptions_Post_Errors_Empty },
@@ -898,10 +975,11 @@ NopinionReqCliOptions_Entries[] = {
 
 static const uint8_t
 NopinionReqCliOptions_Map[] = {
-  0, 1, 5, 4, 2, 6, 3, 3, 3, 3, 3, 3, 0, 1, 8, 4, 2, 9, 0, 1, 7, 7, 2, 2, 0,
-  10, 11, 12, 13, 14, 0, 1, 15, 16, 2, 17, 0, 1, 5, 4, 2, 6, 0, 1, 1, 1, 2, 2,
-  0, 1, 1, 1, 2, 2, 0, 1, 1, 1, 2, 2, 0, 1, 5, 4, 2, 6, 0, 0, 0, 0, 0, 0, 0, 0,
-  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+  0, 1, 6, 5, 2, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 3, 3, 3, 3, 3, 0, 1,
+  6, 5, 2, 7, 0, 0, 0, 0, 0, 0, 4, 4, 4, 4, 4, 4, 0, 1, 9, 5, 2, 10, 0, 1, 8,
+  8, 2, 2, 0, 11, 12, 13, 14, 15, 0, 1, 16, 17, 2, 18, 0, 1, 6, 5, 2, 7, 0, 1,
+  1, 1, 2, 2, 0, 1, 1, 1, 2, 2, 0, 1, 1, 1, 2, 2, 0, 1, 6, 5, 2, 7, 0, 0, 0, 0,
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 };
 
 /* clang-format on */

@@ -21,6 +21,7 @@ source:
 - nopinion/tests/tc-cli.c
 - nopinion/tests/tc-report-line.c
 - nopinion/tests/tc-report-options.c
+- nopinion/tests/tc-report-sarif-log.c
 - nopinion/tests/tc-input-file.c
 - nopinion/tests/tc-input-archive.c
 - nopinion/tests/tc-input-relocations.c
