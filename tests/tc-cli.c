@@ -61,6 +61,7 @@ typedef enum {
   NopinionReqCliOptions_Pre_Option_None,
   NopinionReqCliOptions_Pre_Option_BaseNoName,
   NopinionReqCliOptions_Pre_Option_BaseNoDirectory,
+  NopinionReqCliOptions_Pre_Option_BaseMemory,
   NopinionReqCliOptions_Pre_Option_BaseMissing,
   NopinionReqCliOptions_Pre_Option_FormatText,
   NopinionReqCliOptions_Pre_Option_FormatUnknown,
@@ -113,6 +114,7 @@ typedef enum {
 typedef enum {
   NopinionReqCliOptions_Post_Errors_Empty,
   NopinionReqCliOptions_Post_Errors_Usage,
+  NopinionReqCliOptions_Post_Errors_BaseMemoryMessage,
   NopinionReqCliOptions_Post_Errors_BaseMessage,
   NopinionReqCliOptions_Post_Errors_Message,
   NopinionReqCliOptions_Post_Errors_Statistics,
@@ -245,6 +247,7 @@ static const char *const NopinionReqCliOptions_PreDesc_Option[] = {
   "None",
   "BaseNoName",
   "BaseNoDirectory",
+  "BaseMemory",
   "BaseMissing",
   "FormatText",
   "FormatUnknown",
@@ -308,6 +311,18 @@ static void NopinionReqCliOptions_Pre_Option_Prepare(
       static const char *const options[] = { "-b", "PKG", NULL };
 
       ctx->options = options;
+      break;
+    }
+
+    case NopinionReqCliOptions_Pre_Option_BaseMemory: {
+      /*
+       * While the option -b is given, while the memory for the URI base ids is
+       * exhausted.
+       */
+      static const char *const options[] = { "-b", "PKG=.", NULL };
+
+      ctx->options = options;
+      TxFailNext( TX_FAIL_CALLOC );
       break;
     }
 
@@ -718,6 +733,15 @@ static void NopinionReqCliOptions_Post_Errors_Check(
       break;
     }
 
+    case NopinionReqCliOptions_Post_Errors_BaseMemoryMessage: {
+      /*
+       * The errata checker shall write the error message of the exhausted
+       * memory for the URI base ids to the standard error.
+       */
+      T_eq_str( ctx->err, "nopinion: PKG=.: out of memory\n" );
+      break;
+    }
+
     case NopinionReqCliOptions_Post_Errors_BaseMessage: {
       /*
        * The errata checker shall write the error message of the missing
@@ -908,6 +932,7 @@ static void NopinionReqCliOptions_Action( NopinionReqCliOptions_Context *ctx )
     snprintf( ctx->statistics, sizeof( ctx->statistics ), "%s", statistics );
   ctx->out = TxMain( argc, argv, &ctx->status );
   ctx->err = TxErrors();
+  TxFailNext( 0 );
 }
 
 /* clang-format off */
@@ -923,6 +948,9 @@ NopinionReqCliOptions_Entries[] = {
   { 0, 0, 0, NopinionReqCliOptions_Post_Status_Error,
     NopinionReqCliOptions_Post_Output_Empty,
     NopinionReqCliOptions_Post_Errors_Message },
+  { 0, 0, 0, NopinionReqCliOptions_Post_Status_Error,
+    NopinionReqCliOptions_Post_Output_Empty,
+    NopinionReqCliOptions_Post_Errors_BaseMemoryMessage },
   { 0, 0, 0, NopinionReqCliOptions_Post_Status_Error,
     NopinionReqCliOptions_Post_Output_Empty,
     NopinionReqCliOptions_Post_Errors_BaseMessage },
@@ -975,11 +1003,12 @@ NopinionReqCliOptions_Entries[] = {
 
 static const uint8_t
 NopinionReqCliOptions_Map[] = {
-  0, 1, 6, 5, 2, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 3, 3, 3, 3, 3, 0, 1,
-  6, 5, 2, 7, 0, 0, 0, 0, 0, 0, 4, 4, 4, 4, 4, 4, 0, 1, 9, 5, 2, 10, 0, 1, 8,
-  8, 2, 2, 0, 11, 12, 13, 14, 15, 0, 1, 16, 17, 2, 18, 0, 1, 6, 5, 2, 7, 0, 1,
-  1, 1, 2, 2, 0, 1, 1, 1, 2, 2, 0, 1, 1, 1, 2, 2, 0, 1, 6, 5, 2, 7, 0, 0, 0, 0,
-  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+  0, 1, 7, 6, 2, 8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 3, 3, 3, 3, 3, 4, 4,
+  4, 4, 4, 4, 0, 1, 7, 6, 2, 8, 0, 0, 0, 0, 0, 0, 5, 5, 5, 5, 5, 5, 0, 1, 10,
+  6, 2, 11, 0, 1, 9, 9, 2, 2, 0, 12, 13, 14, 15, 16, 0, 1, 17, 18, 2, 19, 0, 1,
+  7, 6, 2, 8, 0, 1, 1, 1, 2, 2, 0, 1, 1, 1, 2, 2, 0, 1, 1, 1, 2, 2, 0, 1, 7, 6,
+  2, 8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  0, 0, 0, 0, 0, 0
 };
 
 /* clang-format on */
