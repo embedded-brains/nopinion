@@ -275,7 +275,8 @@ static void check_elf( const elf_input *in )
     ctx.member_length = in->member_length;
     ctx.section = (const char *) d + stroff + name;
     ctx.address = get_be32( sh + 12 );
-    ctx.file_offset = in->offset + off;
+    ctx.file_offset = off;
+    ctx.member_offset = in->offset;
     ctx.alignment = get_be32( sh + 32 );
     ctx.relocatable = type == ET_REL;
     ctx.code = d + off;

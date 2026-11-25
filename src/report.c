@@ -3,6 +3,7 @@
 /* Copyright (C) 2026 embedded brains GmbH & Co. KG */
 
 #include <inttypes.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "nopinion.h"
@@ -111,12 +112,14 @@ static void print_json_string( const char *s, size_t n )
  * name takes the scheme file of RFC 8089.  Each byte outside the unreserved
  * characters and the slash is percent-encoded.
  */
-static void print_uri( const char *s )
+static void print_uri( const char *s, size_t n )
 {
+  size_t k;
+
   fputs( *s == '/' ? "\"file://" : "\"", opts.out );
 
-  while ( *s != '\0' ) {
-    unsigned char c = (unsigned char) *s;
+  for ( k = 0; k < n; ++k ) {
+    unsigned char c = (unsigned char) s[ k ];
 
     if (
       strchr(
@@ -128,11 +131,136 @@ static void print_uri( const char *s )
     } else {
       fprintf( opts.out, "%%%02X", c );
     }
-
-    ++s;
   }
 
   fputc( '"', opts.out );
+}
+
+static artifact *new_artifact(
+  const section_context *ctx,
+  const char            *uri,
+  size_t                 uri_length
+)
+{
+  artifact *a = malloc( sizeof( *a ) + uri_length + 1 );
+
+  if ( a == NULL ) {
+    error( ctx->file, ctx->member, ctx->member_length, "out of memory" );
+    return NULL;
+  }
+
+  a->next = NULL;
+  a->index = opts.artifact_count;
+  a->parent = 0;
+  a->relative_base = NULL;
+  a->member = NULL;
+  a->member_length = uri_length;
+  memcpy( a->uri, uri, uri_length );
+  a->uri[ uri_length ] = '\0';
+  *opts.artifact_tail = a;
+  opts.artifact_tail = &a->next;
+  ++opts.artifact_count;
+  return a;
+}
+
+static bool has_uri( const artifact *a, const char *uri, size_t uri_length )
+{
+  return a->member_length == uri_length &&
+         memcmp( a->uri, uri, uri_length ) == 0;
+}
+
+/* Returns the artifact of the archive with the URI and the base, or NULL */
+static artifact *find_archive( const char *uri, size_t n, const base *b )
+{
+  artifact *a;
+
+  for ( a = opts.artifacts; a != NULL; a = a->next ) {
+    if ( a->member == NULL && a->relative_base == b && has_uri( a, uri, n ) ) {
+      return a;
+    }
+  }
+
+  return NULL;
+}
+
+/* Returns the artifact of the member with the name in the archive, or NULL */
+static artifact *find_member( const char *name, size_t n, size_t parent )
+{
+  artifact *a;
+
+  for ( a = opts.artifacts; a != NULL; a = a->next ) {
+    if ( a->member != NULL && a->parent == parent && has_uri( a, name, n ) ) {
+      return a;
+    }
+  }
+
+  return NULL;
+}
+
+/*
+ * Returns the artifact of the member of the section and adds it and the
+ * artifact of its archive on demand.  Returns NULL, if no memory is
+ * available.
+ */
+static const artifact *member_artifact( const section_context *ctx )
+{
+  /* After an allocation failure, each result of the file names the archive */
+  if ( opts.artifacts_failed ) {
+    return NULL;
+  }
+
+  if ( opts.archive == NULL ) {
+    const char *uri = opts.relative != NULL ? opts.relative : ctx->file;
+    size_t      n = strlen( uri );
+
+    opts.archive = find_archive( uri, n, opts.relative_base );
+
+    if ( opts.archive == NULL ) {
+      opts.archive = new_artifact( ctx, uri, n );
+
+      if ( opts.archive == NULL ) {
+        opts.artifacts_failed = true;
+        return NULL;
+      }
+
+      opts.archive->relative_base = opts.relative_base;
+    }
+  }
+
+  /* The sections of one member share the pointer to its name */
+  if ( opts.member == NULL || opts.member->member != ctx->member ) {
+    artifact *member = find_member(
+      ctx->member,
+      ctx->member_length,
+      opts.archive->index
+    );
+
+    if ( member == NULL ) {
+      member = new_artifact( ctx, ctx->member, ctx->member_length );
+
+      if ( member == NULL ) {
+        opts.artifacts_failed = true;
+        return NULL;
+      }
+
+      member->parent = opts.archive->index;
+    }
+
+    member->member = ctx->member;
+    opts.member = member;
+  }
+
+  return opts.member;
+}
+
+static void print_top_level( const char *uri, const base *b )
+{
+  print_uri( uri, strlen( uri ) );
+
+  if ( b != NULL ) {
+    fputs( ",\"uriBaseId\":", opts.out );
+    print_json_string( b->id, b->id_length );
+  }
 }
 
 static void print_sarif(
@@ -146,7 +274,13 @@ static void print_sarif(
   int                    path_length
 )
 {
-  int j;
+  const artifact *member = NULL;
+  size_t          region = ctx->file_offset + offset;
+  int             j;
+
+  if ( ctx->member != NULL ) {
+    member = member_artifact( ctx );
+  }
 
   if ( stats.definite_count + stats.possible_count > 1 ) {
     fputc( ',', opts.out );
@@ -164,18 +298,25 @@ static void print_sarif(
     kind,
     m == MATCH_POSSIBLE ? " possible" : ""
   );
-  if ( opts.relative != NULL ) {
-    print_uri( opts.relative );
-    fputs( ",\"uriBaseId\":", opts.out );
-    print_json_string( opts.base_id, opts.base_id_length );
+  if ( member != NULL ) {
+    print_uri( member->uri, member->member_length );
+    fprintf( opts.out, ",\"index\":%zu", member->index );
   } else {
-    print_uri( ctx->file );
+    /*
+     * Without the artifact of the member, the location names the archive
+     * and the offset of the instruction in the archive.
+     */
+    print_top_level(
+      opts.relative != NULL ? opts.relative : ctx->file,
+      opts.relative_base
+    );
+    region += ctx->member_offset;
   }
 
   fprintf(
     opts.out,
     "},\"region\":{\"byteOffset\":%zu,\"byteLength\":4}",
-    ctx->file_offset + offset
+    region
   );
 
   if ( !ctx->relocatable ) {
@@ -195,15 +336,7 @@ static void print_sarif(
     fputs( ",\"kind\":\"function\"}]", opts.out );
   }
 
-  fputs( ",\"properties\":{", opts.out );
-
-  if ( ctx->member != NULL ) {
-    fputs( "\"member\":", opts.out );
-    print_json_string( ctx->member, ctx->member_length );
-    fputc( ',', opts.out );
-  }
-
-  fputs( "\"section\":", opts.out );
+  fputs( ",\"properties\":{\"section\":", opts.out );
   print_json_string( ctx->section, strlen( ctx->section ) );
   fprintf( opts.out, ",\"offset\":%" PRIu32 "}}]", offset );
 
@@ -289,23 +422,73 @@ void report_begin( void )
       opts.out
     );
 
-    /* The log omits the absolute URI of the base directory */
-    if ( opts.base != NULL ) {
+    /* The log omits the absolute URIs of the base directories */
+    if ( opts.base_count > 0 ) {
+      size_t k;
+
       fputs( "\"originalUriBaseIds\":{", opts.out );
-      print_json_string( opts.base_id, opts.base_id_length );
-      fputs( ":{}},", opts.out );
+
+      for ( k = 0; k < opts.base_count; ++k ) {
+        if ( k > 0 ) {
+          fputc( ',', opts.out );
+        }
+
+        print_json_string( opts.bases[ k ].id, opts.bases[ k ].id_length );
+        fputs( ":{}", opts.out );
+      }
+
+      fputs( "},", opts.out );
     }
 
     fputs( "\"results\":[", opts.out );
   }
+
+  opts.artifacts = NULL;
+  opts.artifact_tail = &opts.artifacts;
+  opts.artifact_count = 0;
+  opts.archive = NULL;
+  opts.member = NULL;
+}
+
+void report_file_end( void )
+{
+  opts.archive = NULL;
+  opts.member = NULL;
+  opts.artifacts_failed = false;
 }
 
 void report_end( void )
 {
+  artifact *a = opts.artifacts;
+
   if ( opts.sarif && !opts.quiet ) {
+    fputs( "\n]", opts.out );
+
+    if ( a != NULL ) {
+      fputs( ",\"artifacts\":[", opts.out );
+    }
+
+    while ( a != NULL ) {
+      artifact *next = a->next;
+
+      fputs( "{\"location\":{\"uri\":", opts.out );
+
+      if ( a->member == NULL ) {
+        print_top_level( a->uri, a->relative_base );
+        fputs( "}}", opts.out );
+      } else {
+        print_uri( a->uri, a->member_length );
+        fprintf( opts.out, "},\"parentIndex\":%zu}", a->parent );
+      }
+
+      fputs( next != NULL ? "," : "]", opts.out );
+      free( a );
+      a = next;
+    }
+
     fprintf(
       opts.out,
-      "\n],\"invocations\":[{\"executionSuccessful\":%s}]}]}\n",
+      ",\"invocations\":[{\"executionSuccessful\":%s}]}]}\n",
       stats.had_error ? "false" : "true"
     );
   }

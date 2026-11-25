@@ -105,6 +105,7 @@ typedef struct {
   const char    *section;
   uint32_t       address;
   size_t         file_offset;
+  size_t         member_offset;
   uint32_t       alignment;
   bool           relocatable;
   const uint8_t *code;
@@ -127,6 +128,28 @@ typedef struct {
   match ( *match )( const section_context *ctx, const long *path );
 } sequence_check;
 
+/* A URI base id of the option -b NAME=DIR */
+typedef struct {
+  const char *id;
+  size_t      id_length;
+  char       *directory;
+  size_t      directory_length;
+} base;
+
+/*
+ * An artifact of the SARIF log: an archive, or a member of an archive with
+ * the index of the archive as its parent
+ */
+typedef struct artifact {
+  struct artifact *next;
+  size_t           index;
+  size_t           parent;
+  const base      *relative_base;
+  const char      *member;
+  size_t           member_length;
+  char             uri[];
+} artifact;
+
 typedef struct {
   FILE        *out;
   FILE        *err;
@@ -135,11 +158,17 @@ typedef struct {
   bool         verbose;
   bool         include_indirect;
   bool         sarif;
-  const char  *base_id;
-  size_t       base_id_length;
-  char        *base;
-  size_t       base_length;
+  base        *bases;
+  size_t       base_count;
+  char        *real;
   const char  *relative;
+  const base  *relative_base;
+  artifact    *artifacts;
+  artifact   **artifact_tail;
+  size_t       artifact_count;
+  artifact    *archive;
+  artifact    *member;
+  bool         artifacts_failed;
 } options;
 
 typedef struct {
@@ -245,6 +274,8 @@ void report(
 void report_begin( void );
 
 void report_end( void );
+
+void report_file_end( void );
 
 void error(
   const char *file,

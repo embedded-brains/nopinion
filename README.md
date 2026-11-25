@@ -32,8 +32,10 @@ The option `-p` selects the errata of one part: `gr712rc`, `gr740`,
 The option `-f sarif` writes the report as a log of the Static Analysis
 Results Interchange Format (SARIF) Version 2.1.0. With the option
 `-b NAME=DIR`, the log gives the URI of each file below the directory `DIR`
-relative to the URI base id `NAME`. The log does not hold the absolute path
-of `DIR`, so a reader of the log resolves `NAME`.
+relative to the URI base id `NAME`. The option may repeat, and the longest
+directory which contains a file applies. The log does not hold the absolute
+paths of the directories, so a reader of the log resolves each `NAME`. A
+member of an archive is a nested artifact of its archive.
 
 ## Build
 

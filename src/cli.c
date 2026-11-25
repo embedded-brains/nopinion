@@ -134,7 +134,9 @@ static void usage( FILE *out )
     "\n"
     "  -b NAME=DIR\n"
     "             in a SARIF log, give the URI of each file below the\n"
-    "             directory relative to the URI base id NAME\n"
+    "             directory relative to the URI base id NAME; the option\n"
+    "             may repeat, the longest directory which contains a file\n"
+    "             applies\n"
     "  -f FORMAT  write the report as text (default) or as a SARIF 2.1.0\n"
     "             log: text or sarif\n"
     "  -p PART    check only the errata which affect the part: gr712rc,\n"
@@ -152,55 +154,96 @@ static void usage( FILE *out )
   );
 }
 
-/* Selects the base directory of the option -b NAME=DIR */
-static int set_base( const char *arg, FILE *err )
+/*
+ * Adds the URI base id of the option -b NAME=DIR.  A later option with the
+ * same name replaces the directory of the earlier one.
+ */
+static int add_base( const char *arg, int argc, FILE *err )
 {
   const char *eq = strchr( arg, '=' );
+  size_t      id_length;
+  size_t      k;
+  base       *b;
 
   if ( eq == NULL || eq == arg ) {
     usage( err );
     return 2;
   }
 
-  free( opts.base );
-  opts.base = realpath( eq + 1, NULL );
+  if ( opts.bases == NULL ) {
+    opts.bases = calloc( (size_t) argc, sizeof( *opts.bases ) );
 
-  if ( opts.base == NULL ) {
+    if ( opts.bases == NULL ) {
+      error( arg, NULL, 0, "out of memory" );
+      return 2;
+    }
+  }
+
+  id_length = (size_t) ( eq - arg );
+  b = &opts.bases[ opts.base_count ];
+
+  for ( k = 0; k < opts.base_count; ++k ) {
+    if (
+      opts.bases[ k ].id_length == id_length &&
+      memcmp( opts.bases[ k ].id, arg, id_length ) == 0
+    ) {
+      b = &opts.bases[ k ];
+      break;
+    }
+  }
+
+  free( b->directory );
+  b->directory = realpath( eq + 1, NULL );
+
+  if ( b->directory == NULL ) {
     error( eq + 1, NULL, 0, strerror( errno ) );
     return 2;
   }
 
-  opts.base_id = arg;
-  opts.base_id_length = (size_t) ( eq - arg );
+  if ( b == &opts.bases[ opts.base_count ] ) {
+    ++opts.base_count;
+  }
+
+  b->id = arg;
+  b->id_length = id_length;
 
   /* The real path of the root directory is the only one with a final slash */
-  opts.base_length = strcmp( opts.base, "/" ) == 0 ? 0 : strlen( opts.base );
+  b->directory_length = strcmp( b->directory, "/" ) == 0
+                          ? 0
+                          : strlen( b->directory );
   return 0;
 }
 
 /*
- * Sets the path relative to the base directory of the file, or NULL, if the
- * real path of the file is not below the base directory.  Returns the real
- * path to free.
+ * Sets the path of the file relative to the base directory with the longest
+ * path which contains the file.  Sets NULL, if no base directory contains the
+ * real path of the file.
  */
-static char *set_relative( const char *file )
+static void set_relative( const char *file )
 {
-  char *real = NULL;
+  size_t k;
 
   opts.relative = NULL;
+  opts.relative_base = NULL;
+  opts.real = opts.base_count > 0 ? realpath( file, NULL ) : NULL;
 
-  if ( opts.base != NULL ) {
-    real = realpath( file, NULL );
-
-    if (
-      real != NULL && strncmp( real, opts.base, opts.base_length ) == 0 &&
-      real[ opts.base_length ] == '/'
-    ) {
-      opts.relative = real + opts.base_length + 1;
-    }
+  if ( opts.real == NULL ) {
+    return;
   }
 
-  return real;
+  for ( k = 0; k < opts.base_count; ++k ) {
+    const base *b = &opts.bases[ k ];
+
+    if (
+      strncmp( opts.real, b->directory, b->directory_length ) == 0 &&
+      opts.real[ b->directory_length ] == '/' &&
+      ( opts.relative_base == NULL ||
+        b->directory_length > opts.relative_base->directory_length )
+    ) {
+      opts.relative = opts.real + b->directory_length + 1;
+      opts.relative_base = b;
+    }
+  }
 }
 
 static int run( int argc, char **argv, FILE *out, FILE *err )
@@ -221,7 +264,7 @@ static int run( int argc, char **argv, FILE *out, FILE *err )
   while ( ( opt = getopt( argc, argv, "b:f:hip:qst:v" ) ) != -1 ) {
     switch ( opt ) {
       case 'b':
-        if ( set_base( optarg, err ) != 0 ) {
+        if ( add_base( optarg, argc, err ) != 0 ) {
           return 2;
         }
         break;
@@ -285,10 +328,10 @@ static int run( int argc, char **argv, FILE *out, FILE *err )
   report_begin();
 
   for ( i = optind; i < argc; ++i ) {
-    char *real = set_relative( argv[ i ] );
-
+    set_relative( argv[ i ] );
     check_file( argv[ i ] );
-    free( real );
+    report_file_end();
+    free( opts.real );
   }
 
   report_end();
@@ -312,9 +355,14 @@ static int run( int argc, char **argv, FILE *out, FILE *err )
 
 int nopinion_main( int argc, char **argv, FILE *out, FILE *err )
 {
-  int status = run( argc, argv, out, err );
+  int    status = run( argc, argv, out, err );
+  size_t k;
 
-  free( opts.base );
-  opts.base = NULL;
+  for ( k = 0; k < opts.base_count; ++k ) {
+    free( opts.bases[ k ].directory );
+  }
+
+  free( opts.bases );
+  opts.bases = NULL;
   return status;
 }
