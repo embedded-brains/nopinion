@@ -1,0 +1,514 @@
+SPDX-License-Identifier: CC-BY-SA-4.0 OR BSD-2-Clause
+copyrights:
+- Copyright (C) 2026 embedded brains GmbH & Co. KG
+enabled-by: true
+functional-type: action
+links:
+- role: requirement-refinement
+  uid: report-sarif
+- location: section 3.24
+  role: reference
+  uid: /ref/std/oasis-sarif-2-1-0
+post-conditions:
+- name: Artifacts
+  states:
+  - name: OneDistinct
+    test-code: |
+      CheckArtifacts(
+        ctx,
+        "{\"location\":{\"uri\":\"%s/a.a\"}},"
+        "{\"location\":{\"uri\":\"m.o\"},\"parentIndex\":0},"
+        "{\"location\":{\"uri\":\"nn.o\"},\"parentIndex\":0}"
+      );
+    text: |
+      The artifacts of the run shall be the archive, the member m.o with the parent
+      index 0 and the member nn.o with the parent index 0.
+  - name: OneDuplicate
+    test-code: |
+      CheckArtifacts(
+        ctx,
+        "{\"location\":{\"uri\":\"%s/a.a\"}},"
+        "{\"location\":{\"uri\":\"m.o\"},\"parentIndex\":0}"
+      );
+    text: |
+      The artifacts of the run shall be the archive and the member m.o with the
+      parent index 0.
+  - name: TwoDistinct
+    test-code: |
+      CheckArtifacts(
+        ctx,
+        "{\"location\":{\"uri\":\"%s/a.a\"}},"
+        "{\"location\":{\"uri\":\"m.o\"},\"parentIndex\":0},"
+        "{\"location\":{\"uri\":\"nn.o\"},\"parentIndex\":0},"
+        "{\"location\":{\"uri\":\"%s/b.a\"}},"
+        "{\"location\":{\"uri\":\"m.o\"},\"parentIndex\":3},"
+        "{\"location\":{\"uri\":\"nn.o\"},\"parentIndex\":3}"
+      );
+    text: |
+      The artifacts of the run shall be the first archive, its members m.o and nn.o
+      with the parent index 0, the second archive, and its members m.o and nn.o
+      with the parent index 3.
+  - name: TwoDuplicate
+    test-code: |
+      CheckArtifacts(
+        ctx,
+        "{\"location\":{\"uri\":\"%s/a.a\"}},"
+        "{\"location\":{\"uri\":\"m.o\"},\"parentIndex\":0},"
+        "{\"location\":{\"uri\":\"%s/b.a\"}},"
+        "{\"location\":{\"uri\":\"m.o\"},\"parentIndex\":2}"
+      );
+    text: |
+      The artifacts of the run shall be the first archive, its member m.o with the
+      parent index 0, the second archive, and its member m.o with the parent index
+      2.
+  - name: BasedDistinct
+    test-code: |
+      CheckArtifacts(
+        ctx,
+        "{\"location\":{\"uri\":\"a.a\",\"uriBaseId\":\"X\"}},"
+        "{\"location\":{\"uri\":\"m.o\"},\"parentIndex\":0},"
+        "{\"location\":{\"uri\":\"nn.o\"},\"parentIndex\":0},"
+        "{\"location\":{\"uri\":\"a.a\",\"uriBaseId\":\"Y\"}},"
+        "{\"location\":{\"uri\":\"m.o\"},\"parentIndex\":3},"
+        "{\"location\":{\"uri\":\"nn.o\"},\"parentIndex\":3}"
+      );
+    text: |
+      The artifacts of the run shall be the archive a.a of the URI base id X, its
+      members m.o and nn.o with the parent index 0, the archive a.a of the URI
+      base id Y, and its members m.o and nn.o with the parent index 3.
+  - name: BasedDuplicate
+    test-code: |
+      CheckArtifacts(
+        ctx,
+        "{\"location\":{\"uri\":\"a.a\",\"uriBaseId\":\"X\"}},"
+        "{\"location\":{\"uri\":\"m.o\"},\"parentIndex\":0},"
+        "{\"location\":{\"uri\":\"a.a\",\"uriBaseId\":\"Y\"}},"
+        "{\"location\":{\"uri\":\"m.o\"},\"parentIndex\":2}"
+      );
+    text: |
+      The artifacts of the run shall be the archive a.a of the URI base id X, its
+      member m.o with the parent index 0, the archive a.a of the URI base id Y,
+      and its member m.o with the parent index 2.
+  test-epilogue: null
+  test-prologue: null
+- name: Indices
+  states:
+  - name: OneDistinct
+    test-code: |
+      static const TxSarifIndex indices[] = { { "m.o", 1 }, { "nn.o", 2 } };
+
+      CheckIndices( ctx, indices, 2 );
+    text: |
+      The results shall name the member m.o of the artifact 1 and the member nn.o
+      of the artifact 2.
+  - name: OneDuplicate
+    test-code: |
+      static const TxSarifIndex indices[] = { { "m.o", 1 }, { "m.o", 1 } };
+
+      CheckIndices( ctx, indices, 2 );
+    text: |
+      The results shall name the member m.o of the artifact 1 twice.
+  - name: TwiceDistinct
+    test-code: |
+      static const TxSarifIndex indices[] = { { "m.o", 1 }, { "nn.o", 2 }, { "m.o", 1 }, { "nn.o", 2 } };
+
+      CheckIndices( ctx, indices, 4 );
+    text: |
+      The results shall name the member m.o of the artifact 1, the member nn.o of
+      the artifact 2, the member m.o of the artifact 1 and the member nn.o of the
+      artifact 2.
+  - name: TwiceDuplicate
+    test-code: |
+      static const TxSarifIndex indices[] = { { "m.o", 1 }, { "m.o", 1 }, { "m.o", 1 }, { "m.o", 1 } };
+
+      CheckIndices( ctx, indices, 4 );
+    text: |
+      The results shall name the member m.o of the artifact 1 four times.
+  - name: TwoDistinct
+    test-code: |
+      static const TxSarifIndex indices[] = { { "m.o", 1 }, { "nn.o", 2 }, { "m.o", 4 }, { "nn.o", 5 } };
+
+      CheckIndices( ctx, indices, 4 );
+    text: |
+      The results shall name the member m.o of the artifact 1, the member nn.o of
+      the artifact 2, the member m.o of the artifact 4 and the member nn.o of the
+      artifact 5.
+  - name: TwoDuplicate
+    test-code: |
+      static const TxSarifIndex indices[] = { { "m.o", 1 }, { "m.o", 1 }, { "m.o", 3 }, { "m.o", 3 } };
+
+      CheckIndices( ctx, indices, 4 );
+    text: |
+      The results shall name the member m.o of the artifact 1 twice and the member
+      m.o of the artifact 3 twice.
+  test-epilogue: null
+  test-prologue: null
+pre-conditions:
+- name: Operands
+  states:
+  - name: One
+    test-code: |
+      ctx->files[ 0 ] = ctx->a;
+      ctx->files[ 1 ] = NULL;
+    text: |
+      While the file operand names an archive.
+  - name: Twice
+    test-code: |
+      ctx->files[ 0 ] = ctx->a;
+      ctx->files[ 1 ] = ctx->a;
+    text: |
+      While two file operands name the same archive.
+  - name: Two
+    test-code: |
+      ctx->files[ 0 ] = ctx->a;
+      ctx->files[ 1 ] = ctx->b;
+    text: |
+      While two file operands name two archives with the same members.
+  - name: Based
+    test-code: |
+      ctx->files[ 0 ] = ctx->x;
+      ctx->files[ 1 ] = ctx->y;
+      (void) snprintf( ctx->base_x, sizeof( ctx->base_x ), "X=%s/x", ctx->dir );
+      (void) snprintf( ctx->base_w, sizeof( ctx->base_w ), "W=%s", ctx->dir );
+      (void) snprintf( ctx->base_y, sizeof( ctx->base_y ), "Y=%s/y", ctx->dir );
+      ctx->based = true;
+    text: |
+      While the options -b X=DIR/x, -b W=DIR and -b Y=DIR/y are given in this
+      order, while two file operands name the archives x/a.a and y/a.a of the
+      directory DIR with the same members.
+  test-epilogue: null
+  test-prologue: null
+- name: Members
+  states:
+  - name: Distinct
+    test-code: |
+      ctx->second = "nn.o/";
+    text: |
+      While each archive holds the members m.o and nn.o, each with one
+      ${../glossary/finding:/term}.
+  - name: Duplicate
+    test-code: |
+      ctx->second = "m.o/";
+    text: |
+      While each archive holds two members with the name m.o, each with one
+      ${../glossary/finding:/term}.
+  test-epilogue: null
+  test-prologue: null
+rationale: |
+  Dimension Operands covers the archives of the run, 4 states.
+
+  Dimension Members covers the names of the members of an archive, 2 states.
+
+  An archive of the GNU binutils may hold two members with the same name. The
+  run lists each archive once and each name of a member of it once. Two results
+  of members with the same name therefore name the same artifact. An archive is
+  the same, if its URI and its URI base id are the same.
+references: []
+requirement-type: functional
+skip-reasons: {}
+test-prepare: |
+  ctx->based = false;
+test-action: |
+  TxImage  image;
+  uint8_t  buf[ 4096 ];
+  size_t   size;
+  char    *argv[ 14 ];
+  int      argc = 0;
+  size_t   i;
+  const char *names[ 2 ];
+
+  TxImageInit( &image );
+  TxAppend( &image, TxSt() );
+  TxAppend( &image, TxAdd() );
+  TxAppend( &image, TxSt() );
+  TxAppend( &image, TxLd() );
+  size = TxBuildElf( &image, buf, sizeof( buf ) );
+  names[ 0 ] = ctx->files[ 0 ];
+  names[ 1 ] = ctx->files[ 1 ];
+
+  for ( i = 0; i < 2 && names[ i ] != NULL; ++i ) {
+    TxArchive archive;
+    FILE     *f;
+
+    TxArchiveInit( &archive );
+    TxArchiveAdd( &archive, "m.o/", buf, size, 0 );
+    TxArchiveAdd( &archive, ctx->second, buf, size, 0 );
+    f = fopen( names[ i ], "wb" );
+    T_assert_not_null( f );
+    T_assert_eq_sz( fwrite( archive.buf, 1, archive.size, f ), archive.size );
+    T_assert_eq_int( fclose( f ), 0 );
+  }
+
+  argv[ argc++ ] = "nopinion";
+  argv[ argc++ ] = "-f";
+  argv[ argc++ ] = "sarif";
+  argv[ argc++ ] = "-t0009";
+
+  if ( ctx->based ) {
+    argv[ argc++ ] = "-b";
+    argv[ argc++ ] = ctx->base_x;
+    argv[ argc++ ] = "-b";
+    argv[ argc++ ] = ctx->base_w;
+    argv[ argc++ ] = "-b";
+    argv[ argc++ ] = ctx->base_y;
+  }
+
+  for ( i = 0; i < 2 && ctx->files[ i ] != NULL; ++i ) {
+    argv[ argc++ ] = (char *) ctx->files[ i ];
+  }
+
+  argv[ argc ] = NULL;
+  ctx->out = TxMain( argc, argv, &ctx->status );
+test-brief: null
+test-cleanup: |
+  T_eq_int( unlink( ctx->files[ 0 ] ), 0 );
+
+  if ( ctx->files[ 1 ] != NULL && ctx->files[ 1 ] != ctx->files[ 0 ] ) {
+    T_eq_int( unlink( ctx->files[ 1 ] ), 0 );
+  }
+test-context:
+- brief: |
+    This member contains the temporary directory.
+  description: null
+  member: |
+    char dir[ 32 ]
+- brief: |
+    This member contains the path of the first archive.
+  description: null
+  member: |
+    char a[ 48 ]
+- brief: |
+    This member contains the path of the second archive.
+  description: null
+  member: |
+    char b[ 48 ]
+- brief: |
+    This member contains the path of the archive x/a.a.
+  description: null
+  member: |
+    char x[ 48 ]
+- brief: |
+    This member contains the path of the archive y/a.a.
+  description: null
+  member: |
+    char y[ 48 ]
+- brief: |
+    This member contains the argument of the option -b X=DIR/x.
+  description: null
+  member: |
+    char base_x[ 48 ]
+- brief: |
+    This member contains the argument of the option -b W=DIR.
+  description: null
+  member: |
+    char base_w[ 48 ]
+- brief: |
+    This member contains the argument of the option -b Y=DIR/y.
+  description: null
+  member: |
+    char base_y[ 48 ]
+- brief: |
+    This member is true, if the options -b X=DIR/x, -b W=DIR and -b Y=DIR/y are
+    given.
+  description: null
+  member: |
+    bool based
+- brief: |
+    This member contains the file operands.
+  description: null
+  member: |
+    const char *files[ 2 ]
+- brief: |
+    This member contains the name field of the second member of an archive.
+  description: null
+  member: |
+    const char *second
+- brief: |
+    This member contains the exit status.
+  description: null
+  member: |
+    int status
+- brief: |
+    This member references the standard output.
+  description: null
+  member: |
+    const char *out
+test-context-support: null
+test-description: null
+test-header: null
+test-includes:
+- stdio.h
+- stdlib.h
+- string.h
+- sys/stat.h
+- unistd.h
+test-local-includes:
+- nopinion.h
+- tx-support.h
+test-setup:
+  brief: null
+  code: |
+    char path[ 48 ];
+
+    strcpy( ctx->dir, "tx-artifacts-XXXXXX" );
+    T_assert_not_null( mkdtemp( ctx->dir ) );
+    (void) snprintf( ctx->a, sizeof( ctx->a ), "%s/a.a", ctx->dir );
+    (void) snprintf( ctx->b, sizeof( ctx->b ), "%s/b.a", ctx->dir );
+    (void) snprintf( ctx->x, sizeof( ctx->x ), "%s/x/a.a", ctx->dir );
+    (void) snprintf( ctx->y, sizeof( ctx->y ), "%s/y/a.a", ctx->dir );
+    (void) snprintf( path, sizeof( path ), "%s/x", ctx->dir );
+    T_assert_eq_int( mkdir( path, 0700 ), 0 );
+    (void) snprintf( path, sizeof( path ), "%s/y", ctx->dir );
+    T_assert_eq_int( mkdir( path, 0700 ), 0 );
+  description: null
+test-stop: null
+test-support: |
+  /*
+   * Checks that the last line of the log holds the artifacts.  Each %s of the
+   * format, if any, stands for the temporary directory.
+   */
+  static void CheckArtifacts(
+    const NopinionReqReportSarifArtifacts_Context *ctx,
+    const char                                    *format
+  )
+  {
+    char        artifacts[ 512 ];
+    char        expected[ 640 ];
+    const char *last = ctx->out + strlen( ctx->out ) - 1;
+
+    while ( last > ctx->out && last[ -1 ] != '\n' ) {
+      --last;
+    }
+
+    (void) snprintf( artifacts, sizeof( artifacts ), format, ctx->dir, ctx->dir );
+    (void) snprintf(
+      expected,
+      sizeof( expected ),
+      "],\"artifacts\":[%s],\"invocations\":[{\"executionSuccessful\":true}]}]}\n",
+      artifacts
+    );
+    T_eq_str( last, expected );
+  }
+
+  typedef struct {
+    const char  *member;
+    unsigned int index;
+  } TxSarifIndex;
+
+  /*
+   * Checks the artifact location of each result in the order of the results
+   */
+  static void CheckIndices(
+    const NopinionReqReportSarifArtifacts_Context *ctx,
+    const TxSarifIndex                            *indices,
+    size_t                                         count
+  )
+  {
+    const char *s = ctx->out;
+    size_t      i;
+
+    for ( i = 0; i < count; ++i ) {
+      char expected[ 64 ];
+
+      (void) snprintf(
+        expected,
+        sizeof( expected ),
+        "\"artifactLocation\":{\"uri\":\"%s\",\"index\":%u}",
+        indices[ i ].member,
+        indices[ i ].index
+      );
+      s = strstr( s, expected );
+      T_assert_not_null( s );
+      ++s;
+    }
+
+    T_null( strstr( s, "\"artifactLocation\"" ) );
+  }
+test-target: nopinion/tests/tc-report-sarif-artifacts.c
+test-teardown:
+  brief: null
+  code: |
+    char path[ 48 ];
+
+    (void) snprintf( path, sizeof( path ), "%s/x", ctx->dir );
+    T_eq_int( rmdir( path ), 0 );
+    (void) snprintf( path, sizeof( path ), "%s/y", ctx->dir );
+    T_eq_int( rmdir( path ), 0 );
+    T_eq_int( rmdir( ctx->dir ), 0 );
+  description: null
+text: |
+  ${.:text-template}
+transition-map:
+- enabled-by: true
+  post-conditions:
+    Artifacts: OneDistinct
+    Indices: OneDistinct
+  pre-conditions:
+    Operands:
+    - One
+    Members:
+    - Distinct
+- enabled-by: true
+  post-conditions:
+    Artifacts: OneDuplicate
+    Indices: OneDuplicate
+  pre-conditions:
+    Operands:
+    - One
+    Members:
+    - Duplicate
+- enabled-by: true
+  post-conditions:
+    Artifacts: OneDistinct
+    Indices: TwiceDistinct
+  pre-conditions:
+    Operands:
+    - Twice
+    Members:
+    - Distinct
+- enabled-by: true
+  post-conditions:
+    Artifacts: OneDuplicate
+    Indices: TwiceDuplicate
+  pre-conditions:
+    Operands:
+    - Twice
+    Members:
+    - Duplicate
+- enabled-by: true
+  post-conditions:
+    Artifacts: TwoDistinct
+    Indices: TwoDistinct
+  pre-conditions:
+    Operands:
+    - Two
+    Members:
+    - Distinct
+- enabled-by: true
+  post-conditions:
+    Artifacts: TwoDuplicate
+    Indices: TwoDuplicate
+  pre-conditions:
+    Operands:
+    - Two
+    Members:
+    - Duplicate
+- enabled-by: true
+  post-conditions:
+    Artifacts: BasedDistinct
+    Indices: TwoDistinct
+  pre-conditions:
+    Operands:
+    - Based
+    Members:
+    - Distinct
+- enabled-by: true
+  post-conditions:
+    Artifacts: BasedDuplicate
+    Indices: TwoDuplicate
+  pre-conditions:
+    Operands:
+    - Based
+    Members:
+    - Duplicate
+type: requirement

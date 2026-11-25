@@ -110,6 +110,12 @@ post-conditions:
       T_eq_int( strncmp( ctx->err, "usage: nopinion ", 16 ), 0 );
     text: |
       The errata checker shall write the usage text to the standard error.
+  - name: BaseMemoryMessage
+    test-code: |
+      T_eq_str( ctx->err, "nopinion: PKG=.: out of memory\n" );
+    text: |
+      The errata checker shall write the error message of the exhausted memory for
+      the URI base ids to the standard error.
   - name: BaseMessage
     test-code: |
       T_eq_str( ctx->err, "nopinion: tx-no-such-dir: No such file or directory\n" );
@@ -168,6 +174,15 @@ pre-conditions:
       ctx->options = options;
     text: |
       While the argument of the option -b holds no equals sign.
+  - name: BaseMemory
+    test-code: |
+      static const char *const options[] = { "-b", "PKG=.", NULL };
+
+      ctx->options = options;
+      TxFailNext( TX_FAIL_CALLOC );
+    text: |
+      While the option -b is given, while the memory for the URI base ids is
+      exhausted.
   - name: BaseMissing
     test-code: |
       static const char *const options[] = { "-b", "PKG=tx-no-such-dir", NULL };
@@ -340,7 +355,7 @@ pre-conditions:
   test-epilogue: null
   test-prologue: null
 rationale: |
-  Dimension Option covers the options of the errata checker, 21 states.
+  Dimension Option covers the options of the errata checker, 22 states.
 
   Dimension Files covers the file operands, 6 states.
 
@@ -389,6 +404,7 @@ test-action: |
     snprintf( ctx->statistics, sizeof( ctx->statistics ), "%s", statistics );
   ctx->out = TxMain( argc, argv, &ctx->status );
   ctx->err = TxErrors();
+  TxFailNext( 0 );
 test-brief: null
 test-cleanup: null
 test-context:
@@ -571,6 +587,15 @@ test-teardown:
 text: |
   ${.:text-template}
 transition-map:
+- enabled-by: true
+  post-conditions:
+    Status: Error
+    Output: Empty
+    Errors: BaseMemoryMessage
+  pre-conditions:
+    Option:
+    - BaseMemory
+    Files: all
 - enabled-by: true
   post-conditions:
     Status: Error
