@@ -110,6 +110,12 @@ post-conditions:
       T_eq_int( strncmp( ctx->err, "usage: nopinion ", 16 ), 0 );
     text: |
       The errata checker shall write the usage text to the standard error.
+  - name: BaseMessage
+    test-code: |
+      T_eq_str( ctx->err, "nopinion: tx-no-such-dir: No such file or directory\n" );
+    text: |
+      The errata checker shall write the error message of the missing directory
+      of the option -b to the standard error.
   - name: Message
     test-code: |
       T_eq_str( ctx->err, ctx->message );
@@ -148,6 +154,41 @@ pre-conditions:
       ctx->options = options;
     text: |
       While no option is given.
+  - name: BaseNoName
+    test-code: |
+      static const char *const options[] = { "-b", "=.", NULL };
+
+      ctx->options = options;
+    text: |
+      While the option -b names no URI base id.
+  - name: BaseNoDirectory
+    test-code: |
+      static const char *const options[] = { "-b", "PKG", NULL };
+
+      ctx->options = options;
+    text: |
+      While the argument of the option -b holds no equals sign.
+  - name: BaseMissing
+    test-code: |
+      static const char *const options[] = { "-b", "PKG=tx-no-such-dir", NULL };
+
+      ctx->options = options;
+    text: |
+      While the option -b names a directory which does not exist.
+  - name: FormatText
+    test-code: |
+      static const char *const options[] = { "-f", "text", NULL };
+
+      ctx->options = options;
+    text: |
+      While the option -f text is given.
+  - name: FormatUnknown
+    test-code: |
+      static const char *const options[] = { "-f", "xml", NULL };
+
+      ctx->options = options;
+    text: |
+      While the option -f names an unknown format.
   - name: Help
     test-code: |
       static const char *const options[] = { "-h", NULL };
@@ -299,7 +340,7 @@ pre-conditions:
   test-epilogue: null
   test-prologue: null
 rationale: |
-  Dimension Option covers the options of the errata checker, 16 states.
+  Dimension Option covers the options of the errata checker, 21 states.
 
   Dimension Files covers the file operands, 6 states.
 
@@ -534,10 +575,20 @@ transition-map:
   post-conditions:
     Status: Error
     Output: Empty
+    Errors: BaseMessage
+  pre-conditions:
+    Option:
+    - BaseMissing
+    Files: all
+- enabled-by: true
+  post-conditions:
+    Status: Error
+    Output: Empty
     Errors: Message
   pre-conditions:
     Option:
     - None
+    - FormatText
     - Indirect
     - Verbose
     - Note0009
@@ -576,6 +627,7 @@ transition-map:
   pre-conditions:
     Option:
     - None
+    - FormatText
     - Indirect
     - Quiet
     - Statistics
@@ -594,6 +646,9 @@ transition-map:
     Errors: Usage
   pre-conditions:
     Option:
+    - BaseNoName
+    - BaseNoDirectory
+    - FormatUnknown
     - NoteUnknown
     - NoteLength
     - NoteEmpty
@@ -608,6 +663,7 @@ transition-map:
   pre-conditions:
     Option:
     - None
+    - FormatText
     - Note0009
     - NoteList
     Files:
@@ -661,6 +717,7 @@ transition-map:
   pre-conditions:
     Option:
     - None
+    - FormatText
     - Indirect
     - Note0009
     - NoteList
@@ -694,6 +751,7 @@ transition-map:
   pre-conditions:
     Option:
     - None
+    - FormatText
     - Note0009
     - NoteList
     Files:
@@ -736,6 +794,7 @@ transition-map:
   pre-conditions:
     Option:
     - None
+    - FormatText
     - Indirect
     - Quiet
     - Verbose

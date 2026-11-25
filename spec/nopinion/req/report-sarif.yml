@@ -1,0 +1,22 @@
+SPDX-License-Identifier: CC-BY-SA-4.0 OR BSD-2-Clause
+copyrights:
+- Copyright (C) 2026 embedded brains GmbH & Co. KG
+enabled-by: true
+functional-type: function
+links:
+- role: requirement-refinement
+  uid: report
+- location: section 3.13
+  role: reference
+  uid: /ref/std/oasis-sarif-2-1-0
+rationale: |
+  A log of the Static Analysis Results Interchange Format (SARIF) lets a tool
+  which reads the results of static analysers collect the findings of the
+  errata checker.
+references: []
+requirement-type: functional
+text: |
+  Where the option -f sarif is given, the errata checker shall write the report
+  as one log of the Static Analysis Results Interchange Format (SARIF) Version
+  2.1.0.
+type: requirement

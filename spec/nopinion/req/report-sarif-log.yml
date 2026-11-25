@@ -1,0 +1,981 @@
+SPDX-License-Identifier: CC-BY-SA-4.0 OR BSD-2-Clause
+copyrights:
+- Copyright (C) 2026 embedded brains GmbH & Co. KG
+enabled-by: true
+functional-type: action
+links:
+- role: requirement-refinement
+  uid: report-sarif
+- location: section 3.27
+  role: reference
+  uid: /ref/std/oasis-sarif-2-1-0
+post-conditions:
+- name: Log
+  states:
+  - name: Empty
+    test-code: |
+      T_eq_str( ctx->out, "" );
+    text: |
+      The errata checker shall write nothing to the standard output.
+  - name: Successful
+    test-code: |
+      CheckLog( ctx, "true" );
+    text: |
+      The errata checker shall write one SARIF log with one run of the tool
+      nopinion and one invocation whose property executionSuccessful is true.
+  - name: Failed
+    test-code: |
+      CheckLog( ctx, "false" );
+    text: |
+      The errata checker shall write one SARIF log with one run of the tool
+      nopinion and one invocation whose property executionSuccessful is false.
+  test-epilogue: null
+  test-prologue: null
+- name: BaseIds
+  states:
+  - name: Absent
+    test-code: |
+      T_eq_int( strncmp( ctx->out + strlen( HEAD ), "\"results\":[\n", 12 ), 0 );
+    text: |
+      The run shall hold the result array after the tool.
+  - name: Present
+    test-code: |
+      static const char ids[] = "\"originalUriBaseIds\":{\"PKG\":{}},\"results\":[\n";
+
+      T_eq_int( strncmp( ctx->out + strlen( HEAD ), ids, sizeof( ids ) - 1 ), 0 );
+    text: |
+      The run shall hold the property originalUriBaseIds with the URI base id PKG
+      and an empty artifact location after the tool.
+  test-epilogue: null
+  test-prologue: null
+- name: Results
+  states:
+  - name: None
+    test-code: |
+      T_eq_int( CountLines( ctx->out ), 2 );
+    text: |
+      The run shall hold no result.
+  - name: Definite
+    test-code: |
+      T_eq_int( CountLines( ctx->out ), 3 );
+      CheckHead( ctx, 0, false );
+    text: |
+      The run shall hold one result of the level error with the rule identifier
+      "TN-0009/back-to-back-store" and the message text "TN-0009
+      back-to-back-store".
+  - name: Possible
+    test-code: |
+      T_eq_int( CountLines( ctx->out ), 3 );
+      CheckHead( ctx, 0, true );
+    text: |
+      The run shall hold one result of the level warning with the rule identifier
+      "TN-0009/back-to-back-store" and the message text "TN-0009
+      back-to-back-store possible".
+  - name: Both
+    test-code: |
+      T_eq_int( CountLines( ctx->out ), 4 );
+      CheckHead( ctx, 0, false );
+      CheckHead( ctx, 1, true );
+    text: |
+      The run shall hold the result of the ${../glossary/definite-finding:/term}
+      of the level error followed by the result of the
+      ${../glossary/possible-finding:/term} of the level warning.
+  test-epilogue: null
+  test-prologue: null
+- name: Artifact
+  states:
+  - name: Plain
+    test-code: |
+      CheckEach( ctx, ctx->uri, NULL );
+    text: |
+      The uri property of the artifact location of each result shall be the file
+      operand.
+  - name: Encoded
+    test-code: |
+      CheckEach( ctx, ctx->uri, NULL );
+    text: |
+      The uri property of the artifact location of each result shall be the file
+      operand with each byte outside the unreserved characters and the slash of
+      RFC 3986 percent-encoded.
+  - name: Absolute
+    test-code: |
+      CheckEach( ctx, "\"artifactLocation\":{\"uri\":\"file:///", ctx->uri );
+    text: |
+      The uri property of the artifact location of each result shall be the URI of
+      the scheme file which names the absolute file operand.
+  - name: Based
+    test-code: |
+      CheckEach( ctx, ctx->based_uri, NULL );
+    text: |
+      The artifact location of each result shall hold the path of the file operand
+      relative to the directory of the option -b as the uri property and the URI
+      base id PKG as the uriBaseId property.
+  - name: Root
+    test-code: |
+      CheckEach( ctx, ctx->based_uri, NULL );
+      T_null( strstr( ctx->out, "{\"uri\":\"/" ) );
+      T_null( strstr( ctx->out, "{\"uri\":\"file:" ) );
+    text: |
+      The artifact location of each result shall hold the real path of the file
+      operand without its leading slash as the uri property and the URI base id
+      PKG as the uriBaseId property.
+  test-epilogue: null
+  test-prologue: null
+- name: Location
+  states:
+  - name: Relocatable
+    test-code: |
+      CheckLocations( ctx, false, "" );
+    text: |
+      The location of each result shall hold a physical location without an
+      address with the byte offset of the instruction in the file and the byte
+      length 4, and the section and the offset of the instruction in the section
+      as properties.
+  - name: Executable
+    test-code: |
+      CheckLocations( ctx, true, "" );
+    text: |
+      The location of each result shall hold a physical location with the byte
+      offset of the instruction in the file, the byte length 4 and the absolute
+      address of the instruction of the kind instruction, and the section and the
+      offset of the instruction in the section as properties.
+  - name: Member
+    test-code: |
+      CheckLocations( ctx, false, "\"member\":\"m.o\"," );
+    text: |
+      The location of each result shall hold a physical location without an
+      address with the byte offset of the instruction in the archive and the byte
+      length 4, and the member, the section and the offset of the instruction in
+      the section as properties.
+  test-epilogue: null
+  test-prologue: null
+- name: Logical
+  states:
+  - name: None
+    test-code: |
+      T_null( strstr( ctx->out, "logicalLocations" ) );
+    text: |
+      The errata checker shall write each result without a logical location.
+  - name: Plain
+    test-code: |
+      CheckEach(
+        ctx,
+        "\"logicalLocations\":[{\"name\":\"f\",\"kind\":\"function\"}]",
+        NULL
+      );
+    text: |
+      Each result shall hold one logical location of the kind function with the
+      name of the symbol.
+  - name: Escaped
+    test-code: |
+      CheckEach(
+        ctx,
+        "\"logicalLocations\":[{\"name\":\"s\\\"\\\\\\u0001\",\"kind\":"
+        "\"function\"}]",
+        NULL
+      );
+    text: |
+      Each result shall hold one logical location of the kind function with the
+      name of the symbol as a JSON string which escapes the quotation mark, the
+      reverse solidus and each control character.
+  test-epilogue: null
+  test-prologue: null
+- name: Instructions
+  states:
+  - name: Absent
+    test-code: |
+      T_null( strstr( ctx->out, "instructions" ) );
+    text: |
+      The errata checker shall write each result without the instructions
+      property.
+  - name: Present
+    test-code: |
+      CheckInstructions( ctx );
+    text: |
+      Each result shall hold the instructions property with one object of the
+      offset and the instruction word for each instruction of the instruction
+      sequence, which ends with null for an
+      ${../glossary/unknown-instruction:/term}.
+  test-epilogue: null
+  test-prologue: null
+pre-conditions:
+- name: Option
+  states:
+  - name: Plain
+    test-code: |
+      ctx->verbose = false;
+      ctx->quiet = false;
+    text: |
+      While the option -f sarif is given, while the options -q and -v are not
+      given.
+  - name: Verbose
+    test-code: |
+      ctx->verbose = true;
+      ctx->quiet = false;
+    text: |
+      While the options -f sarif and -v are given, while the option -q is not
+      given.
+  - name: Quiet
+    test-code: |
+      ctx->verbose = false;
+      ctx->quiet = true;
+    text: |
+      While the options -f sarif and -q are given.
+  test-epilogue: null
+  test-prologue: null
+- name: Input
+  states:
+  - name: Relocatable
+    test-code: |
+      ctx->member = false;
+    text: |
+      While the file operand names a relocatable ELF file.
+  - name: Executable
+    test-code: |
+      ctx->image.executable = true;
+      ctx->image.address = 0x40001000;
+      ctx->member = false;
+    text: |
+      While the file operand names an executable ELF file.
+  - name: Member
+    test-code: |
+      ctx->member = true;
+    text: |
+      While the file operand names an archive with the relocatable ELF file m.o as
+      its member.
+  test-epilogue: null
+  test-prologue: null
+- name: Name
+  states:
+  - name: Plain
+    test-code: |
+      (void) snprintf( ctx->file, sizeof( ctx->file ), "%s/t.o", ctx->dir );
+      (void) snprintf(
+        ctx->uri,
+        sizeof( ctx->uri ),
+        "\"artifactLocation\":{\"uri\":\"%s/t.o\"}",
+        ctx->dir
+      );
+      ctx->leaf = "t.o";
+    text: |
+      While the file operand is a relative file name of unreserved characters and
+      slashes.
+  - name: Encoded
+    test-code: |
+      (void) snprintf(
+        ctx->file,
+        sizeof( ctx->file ),
+        "%s/a b%%~\xc3\xa4.o",
+        ctx->dir
+      );
+      (void) snprintf(
+        ctx->uri,
+        sizeof( ctx->uri ),
+        "\"artifactLocation\":{\"uri\":\"%s/a%%20b%%25~%%C3%%A4.o\"}",
+        ctx->dir
+      );
+      ctx->leaf = "a%20b%25~%C3%A4.o";
+    text: |
+      While the file operand is a relative file name with a space, a percent sign,
+      a tilde and the bytes of a UTF-8 character.
+  - name: Absolute
+    test-code: |
+      char cwd[ 128 ];
+
+      T_assert_not_null( getcwd( cwd, sizeof( cwd ) ) );
+      (void)
+        snprintf( ctx->file, sizeof( ctx->file ), "%s/%s/t.o", cwd, ctx->dir );
+      (void) snprintf( ctx->uri, sizeof( ctx->uri ), "/%s/t.o\"}", ctx->dir );
+      ctx->leaf = "t.o";
+    text: |
+      While the file operand is an absolute file name.
+  test-epilogue: null
+  test-prologue: null
+- name: Base
+  states:
+  - name: None
+    test-code: |
+      ctx->base = NULL;
+    text: |
+      While the option -b is not given.
+  - name: Below
+    test-code: |
+      (void) snprintf(
+        ctx->base_option,
+        sizeof( ctx->base_option ),
+        "PKG=%s",
+        ctx->top
+      );
+      ctx->base = ctx->base_option;
+      (void) snprintf(
+        ctx->based_uri,
+        sizeof( ctx->based_uri ),
+        "\"artifactLocation\":{\"uri\":\"xy/%s\",\"uriBaseId\":\"PKG\"}",
+        ctx->leaf
+      );
+    text: |
+      While the option -b PKG=DIR names a directory which contains the directory of
+      the file operand.
+  - name: Root
+    test-code: |
+      (void) snprintf( ctx->base_option, sizeof( ctx->base_option ), "PKG=/" );
+      ctx->base = ctx->base_option;
+      (void) snprintf(
+        ctx->based_uri,
+        sizeof( ctx->based_uri ),
+        "/%s/%s\",\"uriBaseId\":\"PKG\"}",
+        ctx->dir,
+        ctx->leaf
+      );
+    text: |
+      While the option -b PKG=/ names the root directory.
+  - name: Sibling
+    test-code: |
+      (void) snprintf(
+        ctx->base_option,
+        sizeof( ctx->base_option ),
+        "PKG=%s/x",
+        ctx->top
+      );
+      ctx->base = ctx->base_option;
+    text: |
+      While the option -b PKG=DIR names a directory whose path is a prefix of the
+      path of the directory of the file operand and which does not contain the file
+      operand.
+  - name: Outside
+    test-code: |
+      (void) snprintf(
+        ctx->base_option,
+        sizeof( ctx->base_option ),
+        "PKG=%s/zz",
+        ctx->top
+      );
+      ctx->base = ctx->base_option;
+    text: |
+      While the option -b PKG=DIR names a directory whose path is no prefix of the
+      path of the file operand and has the length of the path of the directory of
+      the file operand.
+  test-epilogue: null
+  test-prologue: null
+- name: Symbol
+  states:
+  - name: None
+    test-code: |
+      TxAddSymbol( &ctx->image, "g", 0, 0x11, TX_SECTION_TEXT );
+    text: |
+      While no function and no symbol without type of the
+      ${../glossary/code-section:/term} exists.
+  - name: Plain
+    test-code: |
+      /* The image holds the function f at offset 0 */
+    text: |
+      While the function f starts at offset 0 of the
+      ${../glossary/code-section:/term}.
+  - name: Escaped
+    test-code: |
+      TxAddSymbol( &ctx->image, "s\"\\\x01", 0, 0x12, TX_SECTION_TEXT );
+    text: |
+      While a function starts at offset 0 of the ${../glossary/code-section:/term}
+      whose name holds a quotation mark, a reverse solidus and a control character.
+  test-epilogue: null
+  test-prologue: null
+- name: Match
+  states:
+  - name: None
+    test-code: |
+      TxAppend( &ctx->image, TxNop() );
+      ctx->count = 0;
+    text: |
+      While the ${../glossary/code-section:/term} holds no
+      ${../glossary/finding:/term}.
+  - name: Definite
+    test-code: |
+      TxAppend( &ctx->image, TxSt() );
+      TxAppend( &ctx->image, TxAdd() );
+      TxAppend( &ctx->image, TxSt() );
+      TxAppend( &ctx->image, TxLd() );
+      ctx->count = 1;
+      ctx->offset[ 0 ] = 0;
+      ctx->instructions[ 0 ] = DEFINITE_AT_0;
+    text: |
+      While the ${../glossary/code-section:/term} holds one
+      ${../glossary/definite-finding:/term}.
+  - name: Possible
+    test-code: |
+      TxAppend( &ctx->image, TxSt() );
+      TxAppend( &ctx->image, TxAdd() );
+      ctx->count = 1;
+      ctx->offset[ 0 ] = 0;
+      ctx->instructions[ 0 ] = POSSIBLE_AT_0;
+    text: |
+      While the ${../glossary/code-section:/term} holds one
+      ${../glossary/possible-finding:/term}.
+  - name: Both
+    test-code: |
+      TxAppend( &ctx->image, TxSt() );
+      TxAppend( &ctx->image, TxAdd() );
+      TxAppend( &ctx->image, TxSt() );
+      TxAppend( &ctx->image, TxLd() );
+      TxAppend( &ctx->image, TxSt() );
+      TxAppend( &ctx->image, TxAdd() );
+      ctx->count = 2;
+      ctx->offset[ 0 ] = 0;
+      ctx->offset[ 1 ] = 16;
+      ctx->instructions[ 0 ] = DEFINITE_AT_0;
+      ctx->instructions[ 1 ] = POSSIBLE_AT_16;
+    text: |
+      While the ${../glossary/code-section:/term} holds one
+      ${../glossary/definite-finding:/term} followed by one
+      ${../glossary/possible-finding:/term}.
+  test-epilogue: null
+  test-prologue: null
+- name: Error
+  states:
+  - name: None
+    test-code: |
+      ctx->missing = false;
+    text: |
+      While each file operand names a file which exists.
+  - name: Missing
+    test-code: |
+      ctx->missing = true;
+    text: |
+      While a second file operand names a file which does not exist.
+  test-epilogue: null
+  test-prologue: null
+rationale: |
+  Dimension Option covers the options -q and -v with the option -f sarif, 3
+  states.
+
+  Dimension Input covers the kinds of the file operand, 3 states.
+
+  Dimension Name covers the forms of the file name of the URI, 3 states.
+
+  Dimension Base covers the option -b, 5 states. A directory whose path is a
+  prefix of the path of the file operand need not contain the file operand.
+
+  Dimension Symbol covers the name of the logical location, 3 states.
+
+  Dimension Match covers the count and the kinds of the results, 4 states.
+
+  Dimension Error covers the property executionSuccessful, 2 states.
+
+  The log has one line which opens the result array and one line for each
+  result. One last line closes the result array and holds the invocation.
+
+  The level error marks a ${../glossary/definite-finding:/term} and the level
+  warning marks a ${../glossary/possible-finding:/term}. The rule identifier is a
+  hierarchical string of the erratum and the kind of the instruction sequence.
+
+  A byte region of the physical location gives the instruction in the file, so a
+  tool reads the instruction word at that offset. SARIF has no property for the
+  offset of the instruction in the section and for the member of an archive.
+  They therefore go into the property bag of the location.
+references: []
+requirement-type: functional
+skip-reasons: {}
+test-action: |
+  TxArchive   archive;
+  uint8_t     buf[ 4096 ];
+  size_t      size;
+  const uint8_t *data;
+  FILE       *f;
+  char       *argv[ 10 ];
+  int         argc = 0;
+
+  size = TxBuildElf( &ctx->image, buf, sizeof( buf ) );
+  ctx->text_offset = TxGet32( buf + TxSectionHeader( buf, TX_SECTION_TEXT ) + 16 );
+  data = buf;
+
+  if ( ctx->member ) {
+    TxArchiveInit( &archive );
+    TxArchiveAdd( &archive, "m.o/", buf, size, 0 );
+    data = archive.buf;
+    size = archive.size;
+    ctx->text_offset += 68;
+  }
+
+  f = fopen( ctx->file, "wb" );
+  T_assert_not_null( f );
+  T_assert_eq_sz( fwrite( data, 1, size, f ), size );
+  T_assert_eq_int( fclose( f ), 0 );
+
+  argv[ argc++ ] = "nopinion";
+  argv[ argc++ ] = "-f";
+  argv[ argc++ ] = "sarif";
+
+  if ( ctx->verbose ) {
+    argv[ argc++ ] = "-v";
+  }
+
+  if ( ctx->quiet ) {
+    argv[ argc++ ] = "-q";
+  }
+
+  if ( ctx->base != NULL ) {
+    argv[ argc++ ] = "-b";
+    argv[ argc++ ] = ctx->base;
+  }
+
+  argv[ argc++ ] = "-t0009";
+  argv[ argc++ ] = ctx->file;
+
+  if ( ctx->missing ) {
+    argv[ argc++ ] = ctx->missing_file;
+  }
+
+  argv[ argc ] = NULL;
+  ctx->out = TxMain( argc, argv, &ctx->status );
+test-brief: null
+test-cleanup: |
+  T_eq_int( unlink( ctx->file ), 0 );
+test-context:
+- brief: |
+    This member contains the image of the ELF file.
+  description: null
+  member: |
+    TxImage image
+- brief: |
+    This member is true, if the option -v is given.
+  description: null
+  member: |
+    bool verbose
+- brief: |
+    This member is true, if the option -q is given.
+  description: null
+  member: |
+    bool quiet
+- brief: |
+    This member is true, if the file is an archive with the member m.o.
+  description: null
+  member: |
+    bool member
+- brief: |
+    This member is true, if a file operand names a file which does not exist.
+  description: null
+  member: |
+    bool missing
+- brief: |
+    This member contains the temporary directory.
+  description: null
+  member: |
+    char top[ 32 ]
+- brief: |
+    This member contains the directory xy of the temporary directory which holds
+    the file operand.
+  description: null
+  member: |
+    char dir[ 40 ]
+- brief: |
+    This member contains the expected last segment of the uri property.
+  description: null
+  member: |
+    const char *leaf
+- brief: |
+    This member contains the argument of the option -b.
+  description: null
+  member: |
+    char base_option[ 64 ]
+- brief: |
+    This member references the argument of the option -b, or is NULL.
+  description: null
+  member: |
+    char *base
+- brief: |
+    This member contains the expected artifact location relative to the URI base
+    id or its expected end.
+  description: null
+  member: |
+    char based_uri[ 128 ]
+- brief: |
+    This member contains the path of the file operand.
+  description: null
+  member: |
+    char file[ 192 ]
+- brief: |
+    This member contains the path of the file which does not exist.
+  description: null
+  member: |
+    char missing_file[ 64 ]
+- brief: |
+    This member contains the expected artifact location or its expected end.
+  description: null
+  member: |
+    char uri[ 128 ]
+- brief: |
+    This member contains the count of the expected results.
+  description: null
+  member: |
+    int count
+- brief: |
+    This member contains the offset of the instruction of each result in the
+    code section.
+  description: null
+  member: |
+    uint32_t offset[ 2 ]
+- brief: |
+    This member contains the expected instructions property of each result.
+  description: null
+  member: |
+    const char *instructions[ 2 ]
+- brief: |
+    This member contains the offset of the code section in the file.
+  description: null
+  member: |
+    uint32_t text_offset
+- brief: |
+    This member contains the exit status.
+  description: null
+  member: |
+    int status
+- brief: |
+    This member references the standard output.
+  description: null
+  member: |
+    const char *out
+test-context-support: null
+test-description: null
+test-header: null
+test-includes:
+- stdio.h
+- stdlib.h
+- string.h
+- sys/stat.h
+- unistd.h
+test-local-includes:
+- nopinion.h
+- tx-support.h
+test-prepare: |
+  TxImageInit( &ctx->image );
+test-setup:
+  brief: null
+  code: |
+    char path[ 48 ];
+
+    strcpy( ctx->top, "tx-sarif-XXXXXX" );
+    T_assert_not_null( mkdtemp( ctx->top ) );
+    (void) snprintf( ctx->dir, sizeof( ctx->dir ), "%s/xy", ctx->top );
+    T_assert_eq_int( mkdir( ctx->dir, 0700 ), 0 );
+    (void) snprintf( path, sizeof( path ), "%s/x", ctx->top );
+    T_assert_eq_int( mkdir( path, 0700 ), 0 );
+    (void) snprintf( path, sizeof( path ), "%s/zz", ctx->top );
+    T_assert_eq_int( mkdir( path, 0700 ), 0 );
+    (void) snprintf(
+      ctx->missing_file,
+      sizeof( ctx->missing_file ),
+      "%s/missing.o",
+      ctx->dir
+    );
+  description: null
+test-stop: null
+test-support: |
+  #define HEAD \
+    "{\"version\":\"2.1.0\",\"$schema\":\"https://docs.oasis-open.org/sarif/" \
+    "sarif/v2.1.0/errata01/os/schemas/sarif-schema-2.1.0.json\",\"runs\":[{" \
+    "\"tool\":{\"driver\":{\"name\":\"nopinion\",\"informationUri\":" \
+    "\"https://github.com/embedded-brains/nopinion\"}},"
+
+  /* ST [%o0], %g1 is 0xc2220000 and ADD %g1, 1, %g1 is 0x82006001 */
+  #define DEFINITE_AT_0 \
+    "\"instructions\":[{\"offset\":0,\"word\":3257008128},{\"offset\":4," \
+    "\"word\":2181062657},{\"offset\":8,\"word\":3257008128}]"
+
+  #define POSSIBLE_AT_0 \
+    "\"instructions\":[{\"offset\":0,\"word\":3257008128},{\"offset\":4," \
+    "\"word\":2181062657},null]"
+
+  #define POSSIBLE_AT_16 \
+    "\"instructions\":[{\"offset\":16,\"word\":3257008128},{\"offset\":20," \
+    "\"word\":2181062657},null]"
+
+  static int CountLines( const char *s )
+  {
+    int n = 0;
+
+    while ( ( s = strchr( s, '\n' ) ) != NULL ) {
+      ++n;
+      ++s;
+    }
+
+    return n;
+  }
+
+  /*
+   * Copies the result line of the index without its newline and comma.  Each
+   * result line except the last ends with a comma.
+   */
+  static void ResultLine(
+    const NopinionReqReportSarifLog_Context *ctx,
+    int                           index,
+    char                         *buf,
+    size_t                        size
+  )
+  {
+    const char *line = ctx->out;
+    const char *end;
+    size_t      n;
+    int         i;
+
+    for ( i = 0; i <= index; ++i ) {
+      line = strchr( line, '\n' );
+      T_assert_not_null( line );
+      ++line;
+    }
+
+    end = strchr( line, '\n' );
+    T_assert_not_null( end );
+
+    T_assert_true( end > line );
+    T_eq_int( end[ -1 ] == ',', index + 1 < ctx->count );
+
+    if ( end[ -1 ] == ',' ) {
+      --end;
+    }
+
+    n = (size_t) ( end - line );
+    T_assert_lt_sz( n, size );
+    memcpy( buf, line, n );
+    buf[ n ] = '\0';
+  }
+
+  static void CheckLog( const NopinionReqReportSarifLog_Context *ctx, const char *success )
+  {
+    char        tail[ 128 ];
+    size_t      n = strlen( ctx->out );
+    size_t      m;
+
+    (void) snprintf(
+      tail,
+      sizeof( tail ),
+      "\n],\"invocations\":[{\"executionSuccessful\":%s}]}]}\n",
+      success
+    );
+    m = strlen( tail );
+    T_eq_int( strncmp( ctx->out, HEAD, strlen( HEAD ) ), 0 );
+    T_assert_ge_sz( n, m );
+    T_eq_str( ctx->out + n - m, tail );
+  }
+
+  static void CheckHead(
+    const NopinionReqReportSarifLog_Context *ctx,
+    int                           index,
+    bool                          possible
+  )
+  {
+    char line[ 1024 ];
+    char expected[ 256 ];
+
+    ResultLine( ctx, index, line, sizeof( line ) );
+    (void) snprintf(
+      expected,
+      sizeof( expected ),
+      "{\"ruleId\":\"TN-0009/back-to-back-store\",\"level\":\"%s\","
+      "\"message\":{\"text\":\"TN-0009 back-to-back-store%s\"},"
+      "\"locations\":[{\"physicalLocation\":{",
+      possible ? "warning" : "error",
+      possible ? " possible" : ""
+    );
+    T_eq_int( strncmp( line, expected, strlen( expected ) ), 0 );
+  }
+
+  /* Checks that each result line holds the strings */
+  static void CheckEach(
+    const NopinionReqReportSarifLog_Context *ctx,
+    const char                   *a,
+    const char                   *b
+  )
+  {
+    char line[ 1024 ];
+    int  i;
+
+    for ( i = 0; i < ctx->count; ++i ) {
+      ResultLine( ctx, i, line, sizeof( line ) );
+      T_not_null( strstr( line, a ) );
+
+      if ( b != NULL ) {
+        T_not_null( strstr( line, b ) );
+      }
+    }
+  }
+
+  static void CheckLocations(
+    const NopinionReqReportSarifLog_Context *ctx,
+    bool                          executable,
+    const char                   *member
+  )
+  {
+    char line[ 1024 ];
+    char expected[ 256 ];
+    int  i;
+
+    for ( i = 0; i < ctx->count; ++i ) {
+      int n;
+
+      ResultLine( ctx, i, line, sizeof( line ) );
+      n = snprintf(
+        expected,
+        sizeof( expected ),
+        "},\"region\":{\"byteOffset\":%u,\"byteLength\":4}",
+        (unsigned) ( ctx->text_offset + ctx->offset[ i ] )
+      );
+
+      if ( executable ) {
+        (void) snprintf(
+          expected + n,
+          sizeof( expected ) - (size_t) n,
+          ",\"address\":{\"absoluteAddress\":%u,\"kind\":\"instruction\"}}",
+          (unsigned) ( 0x40001000 + ctx->offset[ i ] )
+        );
+      } else {
+        (void) snprintf( expected + n, sizeof( expected ) - (size_t) n, "}" );
+      }
+
+      T_not_null( strstr( line, expected ) );
+      (void) snprintf(
+        expected,
+        sizeof( expected ),
+        ",\"properties\":{%s\"section\":\".text\",\"offset\":%u}}]",
+        member,
+        (unsigned) ctx->offset[ i ]
+      );
+      T_not_null( strstr( line, expected ) );
+    }
+  }
+
+  static void CheckInstructions( const NopinionReqReportSarifLog_Context *ctx )
+  {
+    char line[ 1024 ];
+    char expected[ 256 ];
+    int  i;
+
+    for ( i = 0; i < ctx->count; ++i ) {
+      size_t n;
+      size_t m;
+
+      ResultLine( ctx, i, line, sizeof( line ) );
+      (void) snprintf(
+        expected,
+        sizeof( expected ),
+        "}}],\"properties\":{%s}}",
+        ctx->instructions[ i ]
+      );
+      n = strlen( line );
+      m = strlen( expected );
+      T_assert_ge_sz( n, m );
+      T_eq_str( line + n - m, expected );
+    }
+  }
+test-target: nopinion/tests/tc-report-sarif-log.c
+test-teardown:
+  brief: null
+  code: |
+    char path[ 48 ];
+
+    T_eq_int( rmdir( ctx->dir ), 0 );
+    (void) snprintf( path, sizeof( path ), "%s/x", ctx->top );
+    T_eq_int( rmdir( path ), 0 );
+    (void) snprintf( path, sizeof( path ), "%s/zz", ctx->top );
+    T_eq_int( rmdir( path ), 0 );
+    T_eq_int( rmdir( ctx->top ), 0 );
+  description: null
+text: |
+  ${.:text-template}
+transition-map:
+- enabled-by: true
+  post-conditions:
+    Log: Empty
+    BaseIds: N/A
+    Results: N/A
+    Artifact: N/A
+    Location: N/A
+    Logical: N/A
+    Instructions: N/A
+  pre-conditions:
+    Option:
+    - Quiet
+    Input: all
+    Name: all
+    Base: all
+    Symbol: all
+    Match: all
+    Error: all
+- enabled-by: true
+  post-conditions:
+    Log:
+    - if:
+        pre-conditions:
+          Error: Missing
+      then: Failed
+    - else: Successful
+    BaseIds:
+    - if:
+        pre-conditions:
+          Base: None
+      then: Absent
+    - else: Present
+    Results: None
+    Artifact: N/A
+    Location: N/A
+    Logical: N/A
+    Instructions: N/A
+  pre-conditions:
+    Option:
+    - Plain
+    - Verbose
+    Input: all
+    Name: all
+    Base: all
+    Symbol: all
+    Match:
+    - None
+    Error: all
+- enabled-by: true
+  post-conditions:
+    Log:
+    - if:
+        pre-conditions:
+          Error: Missing
+      then: Failed
+    - else: Successful
+    BaseIds:
+    - if:
+        pre-conditions:
+          Base: None
+      then: Absent
+    - else: Present
+    Results:
+    - specified-by: Match
+    Artifact:
+    - if:
+        pre-conditions:
+          Base: Below
+      then: Based
+    - if:
+        pre-conditions:
+          Base: Root
+      then: Root
+    - specified-by: Name
+    Location:
+    - specified-by: Input
+    Logical:
+    - specified-by: Symbol
+    Instructions:
+    - if:
+        pre-conditions:
+          Option: Verbose
+      then: Present
+    - else: Absent
+  pre-conditions:
+    Option:
+    - Plain
+    - Verbose
+    Input: all
+    Name: all
+    Base: all
+    Symbol: all
+    Match:
+    - Definite
+    - Possible
+    - Both
+    Error: all
+type: requirement

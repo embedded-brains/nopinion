@@ -1,0 +1,13 @@
+SPDX-License-Identifier: CC-BY-SA-4.0 OR BSD-2-Clause
+copyrights:
+- Copyright (C) 2026 embedded brains GmbH & Co. KG
+enabled-by: true
+links: []
+organization: OASIS Open
+reference-type: manual
+title: Static Analysis Results Interchange Format (SARIF) Version 2.1.0 Plus Errata
+  01, OASIS Standard incorporating Approved Errata 01
+type: reference
+work-hash: null
+work-url: https://docs.oasis-open.org/sarif/sarif/v2.1.0/errata01/os/sarif-v2.1.0-errata01-os-complete.html
+year: '2023'
